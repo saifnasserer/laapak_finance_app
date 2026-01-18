@@ -62,7 +62,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
         backgroundColor: Colors.transparent,
       ),
       floatingActionButton: FloatingActionButton(
-        backgroundColor: LaapakColors.primary,
+        backgroundColor: LaapakColors.brandPrimary,
         child: const Icon(Icons.add, color: Colors.white),
         onPressed: () {
           showDialog(
@@ -82,7 +82,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                 final expense = _expenses[index];
                 return Card(
                   elevation: 0,
-                  color: LaapakColors.surfaceVariant,
+                  color: LaapakColors.neutral100, // Light background for item
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(Responsive.cardRadius),
                   ),
@@ -91,7 +91,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                       backgroundColor: Colors.white,
                       child: Icon(
                         Icons.receipt_long,
-                        color: LaapakColors.textSecondary,
+                        color: LaapakColors.neutral500,
                       ),
                     ),
                     title: Text('${expense.amount} EGP'),

@@ -31,10 +31,11 @@ class _MinimalTextFieldState extends State<MinimalTextField> {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: LaapakColors.surfaceVariant,
+        color: LaapakColors
+            .neutral200, // Using slightly darker for input bg or neutral100
         borderRadius: BorderRadius.circular(Responsive.buttonRadius),
         border: Border.all(
-          color: _isFocused ? LaapakColors.primary : Colors.transparent,
+          color: _isFocused ? LaapakColors.brandPrimary : Colors.transparent,
           width: 1.5,
         ),
       ),
@@ -51,13 +52,13 @@ class _MinimalTextFieldState extends State<MinimalTextField> {
           validator: widget.validator,
           decoration: InputDecoration(
             hintText: widget.hintText,
-            hintStyle: const TextStyle(color: LaapakColors.textSecondary),
+            hintStyle: const TextStyle(color: LaapakColors.neutral500),
             prefixIcon: widget.prefixIcon != null
                 ? IconTheme(
                     data: IconThemeData(
                       color: _isFocused
-                          ? LaapakColors.primary
-                          : LaapakColors.textSecondary,
+                          ? LaapakColors.brandPrimary
+                          : LaapakColors.neutral500,
                     ),
                     child: widget.prefixIcon!,
                   )

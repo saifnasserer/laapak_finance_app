@@ -1,16 +1,32 @@
 import 'package:flutter/material.dart';
 
 class LaapakColors {
-  static const Color primary = Color(0xFF00C853);
-  static const Color primaryDark = Color(0xFF00E676); // Using as gradient end
-  static const Color background = Color(0xFFFFFFFF);
-  static const Color surfaceVariant = Color(0xFFF5F5F5);
-  static const Color textPrimary = Color(0xFF2C2C2C);
-  static const Color textSecondary = Color(0xFF6B6B6B);
-  static const Color error = Color(0xFFD32F2F);
+  // Brand Colors - Laapak Green
+  static const Color brandPrimary = Color(0xFF007553);
+  static const Color brandPrimaryLight = Color(0xFF00A67A);
+  static const Color brandPrimaryDark = Color(0xFF004D35);
 
-  static const LinearGradient laapakGreenGradient = LinearGradient(
-    colors: [primary, primaryDark],
+  // Neutral System (Dominant)
+  static const Color neutral900 = Color(0xFF212529); // Deep Text
+  static const Color neutral700 = Color(0xFF495057); // Secondary Text
+  static const Color neutral500 = Color(0xFF6C757D); // Muted/Meta
+  static const Color neutral200 = Color(0xFFE9ECEF); // Borders/Dividers
+  static const Color neutral100 = Color(0xFFF8F9FA); // Backgrounds
+
+  static const Color white = Color(0xFFFFFFFF);
+
+  // Functional Colors
+  static const Color success = Color(0xFF198754);
+  static const Color warning = Color(0xFFFFC107);
+  static const Color danger = Color(0xFFDC3545);
+
+  // UI Variables
+  static const Color pageBg = neutral100;
+  static const Color cardBg = white;
+
+  // Gradients (Derived from brand)
+  static const LinearGradient primaryGradient = LinearGradient(
+    colors: [brandPrimary, brandPrimaryLight],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );

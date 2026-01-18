@@ -20,7 +20,7 @@ class LoadingButton extends StatelessWidget {
       height: 56,
       width: double.infinity,
       decoration: BoxDecoration(
-        gradient: LaapakColors.laapakGreenGradient,
+        gradient: LaapakColors.primaryGradient,
         borderRadius: BorderRadius.circular(Responsive.buttonRadius),
       ),
       child: ElevatedButton(
