@@ -179,14 +179,14 @@ class _ProfitManagementScreenState extends State<ProfitManagementScreen> {
                     _buildSummaryCard(
                       'إيرادات الأسبوع',
                       _weekSummary['revenue']!,
-                      LaapakColors.neutral900,
+                      LaapakColors.textPrimary,
                       isMobile,
                     ),
                     if (isMobile) const SizedBox(height: 12),
                     _buildSummaryCard(
                       'التكاليف (الأسبوع)',
                       _weekSummary['cost']!,
-                      LaapakColors.danger,
+                      LaapakColors.error,
                       isMobile,
                     ),
                     if (isMobile) const SizedBox(height: 12),
@@ -205,12 +205,12 @@ class _ProfitManagementScreenState extends State<ProfitManagementScreen> {
             // Controls & Table Container
             Container(
               decoration: BoxDecoration(
-                color: LaapakColors.white,
+                color: LaapakColors.surface,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: LaapakColors.neutral200),
+                border: Border.all(color: LaapakColors.border),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.04),
+                    color: Colors.black.withOpacity(0.04),
                     blurRadius: 12,
                     offset: const Offset(0, 2),
                   ),
@@ -251,7 +251,7 @@ class _ProfitManagementScreenState extends State<ProfitManagementScreen> {
                               style: TextStyle(
                                 color: _isReviewMode
                                     ? LaapakColors.warning
-                                    : LaapakColors.neutral500,
+                                    : LaapakColors.textSecondary,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -275,7 +275,7 @@ class _ProfitManagementScreenState extends State<ProfitManagementScreen> {
                                     horizontal: 16,
                                   ),
                                   filled: true,
-                                  fillColor: LaapakColors.neutral100,
+                                  fillColor: LaapakColors.surfaceVariant,
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(20),
                                     borderSide: BorderSide.none,
@@ -288,7 +288,7 @@ class _ProfitManagementScreenState extends State<ProfitManagementScreen> {
                       ],
                     ),
                   ),
-                  const Divider(height: 1, color: LaapakColors.neutral200),
+                  const Divider(height: 1, color: LaapakColors.border),
 
                   // Table
                   _isLoading
@@ -307,7 +307,7 @@ class _ProfitManagementScreenState extends State<ProfitManagementScreen> {
                           itemCount: filteredInvoices.length,
                           separatorBuilder: (_, __) => const Divider(
                             height: 1,
-                            color: LaapakColors.neutral200,
+                            color: LaapakColors.border,
                           ),
                           itemBuilder: (context, index) {
                             final inv = filteredInvoices[index];
@@ -320,17 +320,17 @@ class _ProfitManagementScreenState extends State<ProfitManagementScreen> {
                                 vertical: 8,
                               ),
                               tileColor: (_isReviewMode && hasMissingCost)
-                                  ? LaapakColors.warning.withValues(alpha: 0.1)
+                                  ? LaapakColors.warning.withOpacity(0.1)
                                   : null,
                               leading: Container(
                                 padding: const EdgeInsets.all(8),
                                 decoration: BoxDecoration(
-                                  color: LaapakColors.neutral100,
+                                  color: LaapakColors.surfaceVariant,
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: const Icon(
                                   Icons.receipt,
-                                  color: LaapakColors.neutral500,
+                                  color: LaapakColors.textSecondary,
                                 ),
                               ),
                               title: Text(
@@ -353,7 +353,7 @@ class _ProfitManagementScreenState extends State<ProfitManagementScreen> {
                                         _formattedCurrency(inv['total']),
                                         style: const TextStyle(
                                           fontWeight: FontWeight.bold,
-                                          color: LaapakColors.brandPrimary,
+                                          color: LaapakColors.primary,
                                         ),
                                       ),
                                       Text(
@@ -365,8 +365,8 @@ class _ProfitManagementScreenState extends State<ProfitManagementScreen> {
                                         style: TextStyle(
                                           fontSize: 12,
                                           color: hasMissingCost
-                                              ? LaapakColors.danger
-                                              : LaapakColors.neutral500,
+                                              ? LaapakColors.error
+                                              : LaapakColors.textSecondary,
                                           fontWeight: hasMissingCost
                                               ? FontWeight.bold
                                               : FontWeight.normal,
@@ -402,9 +402,9 @@ class _ProfitManagementScreenState extends State<ProfitManagementScreen> {
                                         );
                                       },
                                       style: OutlinedButton.styleFrom(
-                                        foregroundColor: LaapakColors.danger,
+                                        foregroundColor: LaapakColors.error,
                                         side: const BorderSide(
-                                          color: LaapakColors.danger,
+                                          color: LaapakColors.error,
                                         ),
                                       ),
                                       child: const Text('تعديل'),
@@ -412,7 +412,7 @@ class _ProfitManagementScreenState extends State<ProfitManagementScreen> {
                                   else
                                     const Icon(
                                       Icons.chevron_right,
-                                      color: LaapakColors.neutral500,
+                                      color: LaapakColors.textSecondary,
                                     ),
                                 ],
                               ),
@@ -442,13 +442,13 @@ class _ProfitManagementScreenState extends State<ProfitManagementScreen> {
       constraints: isMobile ? null : const BoxConstraints(minWidth: 250),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: LaapakColors.white,
+        color: LaapakColors.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: LaapakColors.neutral200),
+        border: Border.all(color: LaapakColors.border),
         // No shadow to match clean look or subtle
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04), // --card-shadow
+            color: Colors.black.withOpacity(0.04), // --card-shadow
             blurRadius: 12,
             offset: const Offset(0, 2),
           ),
@@ -457,7 +457,10 @@ class _ProfitManagementScreenState extends State<ProfitManagementScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: const TextStyle(color: LaapakColors.neutral500)),
+          Text(
+            label,
+            style: const TextStyle(color: LaapakColors.textSecondary),
+          ),
           const SizedBox(height: 8),
           Text(
             _formattedCurrency(value),

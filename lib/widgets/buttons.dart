@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme/colors.dart';
-import 'responsive.dart';
+import '../utils/responsive.dart';
 
 class LoadingButton extends StatelessWidget {
   final String text;
@@ -20,7 +20,7 @@ class LoadingButton extends StatelessWidget {
       height: 56,
       width: double.infinity,
       decoration: BoxDecoration(
-        gradient: LaapakColors.primaryGradient,
+        gradient: LaapakColors.laapakGreenGradient,
         borderRadius: BorderRadius.circular(Responsive.buttonRadius),
       ),
       child: ElevatedButton(

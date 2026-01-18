@@ -3,7 +3,7 @@ import 'package:intl/intl.dart';
 import '../models/transaction.dart';
 import '../services/finance_api_service.dart';
 import '../theme/colors.dart';
-import '../widgets/responsive.dart';
+import '../utils/responsive.dart';
 import '../widgets/add_expense_dialog.dart';
 
 class ExpensesScreen extends StatefulWidget {
@@ -62,7 +62,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
         backgroundColor: Colors.transparent,
       ),
       floatingActionButton: FloatingActionButton(
-        backgroundColor: LaapakColors.brandPrimary,
+        backgroundColor: LaapakColors.primary,
         child: const Icon(Icons.add, color: Colors.white),
         onPressed: () {
           showDialog(
@@ -74,24 +74,25 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : ListView.separated(
-              padding: const EdgeInsets.all(Responsive.screenPadding),
+              padding: Responsive.screenPadding,
               itemCount: _expenses.length,
               separatorBuilder: (context, index) =>
-                  const SizedBox(height: Responsive.itemGap),
+                  const SizedBox(height: Responsive.md),
               itemBuilder: (context, index) {
                 final expense = _expenses[index];
                 return Card(
                   elevation: 0,
-                  color: LaapakColors.neutral100, // Light background for item
+                  color: LaapakColors.surface,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(Responsive.cardRadius),
+                    side: const BorderSide(color: LaapakColors.borderLight),
                   ),
                   child: ListTile(
                     leading: const CircleAvatar(
-                      backgroundColor: Colors.white,
+                      backgroundColor: LaapakColors.surfaceVariant,
                       child: Icon(
                         Icons.receipt_long,
-                        color: LaapakColors.neutral500,
+                        color: LaapakColors.primary,
                       ),
                     ),
                     title: Text('${expense.amount} EGP'),

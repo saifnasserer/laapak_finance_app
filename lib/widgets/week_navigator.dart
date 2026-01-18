@@ -21,8 +21,6 @@ class WeekNavigator extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Format: "Jan 14 - Jan 20" (English) or localized
-    // Using en_US for now as base, can be switched to ar based on context
-    // The reference uses "Day Month - Day Month"
     final dateFormat = intl.DateFormat('d MMM', 'ar');
 
     final dateRangeText =
@@ -32,10 +30,10 @@ class WeekNavigator extends StatelessWidget {
       decoration: BoxDecoration(
         color: LaapakColors.white,
         borderRadius: BorderRadius.circular(50),
-        border: Border.all(color: LaapakColors.neutral200),
+        border: Border.all(color: LaapakColors.border),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04), // --card-shadow
+            color: Colors.black.withOpacity(0.04), // --card-shadow
             blurRadius: 12,
             offset: const Offset(0, 2),
           ),
@@ -46,13 +44,7 @@ class WeekNavigator extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           // Previous Button
-          _NavButton(
-            icon: Icons
-                .chevron_right, // RTL: Right means previous in time (older) usually, but logic depends on layout.
-            // In layout LTR: Left is prev. RTL: Right is prev.
-            // Reference HTML: prevWeekBtn has chevron-right (in RTL context).
-            onTap: onPrev,
-          ),
+          _NavButton(icon: Icons.chevron_right, onTap: onPrev),
 
           // Date Display
           Container(
@@ -68,7 +60,7 @@ class WeekNavigator extends StatelessWidget {
                 : Text(
                     dateRangeText,
                     style: const TextStyle(
-                      color: LaapakColors.neutral900,
+                      color: LaapakColors.textPrimary,
                       fontWeight: FontWeight.w600,
                       fontSize: 16,
                     ),
@@ -77,10 +69,7 @@ class WeekNavigator extends StatelessWidget {
           ),
 
           // Next Button
-          _NavButton(
-            icon: Icons.chevron_left, // RTL: Left means next (newer).
-            onTap: onNext,
-          ),
+          _NavButton(icon: Icons.chevron_left, onTap: onNext),
         ],
       ),
     );
@@ -101,10 +90,10 @@ class _NavButton extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(50),
         child: Container(
-          width: 40,
-          height: 40,
+          width: 48,
+          height: 48,
           decoration: const BoxDecoration(shape: BoxShape.circle),
-          child: Icon(icon, color: LaapakColors.brandPrimary, size: 20),
+          child: Icon(icon, color: LaapakColors.primary, size: 20),
         ),
       ),
     );

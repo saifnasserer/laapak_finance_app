@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../theme/colors.dart';
+
 import '../services/finance_api_service.dart';
 import '../widgets/week_navigator.dart';
 import '../widgets/kpi_card.dart';
 import '../widgets/financial_charts.dart';
-import 'profit_management_screen.dart';
-import 'expenses_screen.dart';
+import '../theme/colors.dart';
+import '../theme/typography.dart';
+import '../utils/responsive.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -136,7 +137,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
-              padding: const EdgeInsets.all(24.0),
+              padding: Responsive.screenPadding,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -150,54 +151,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       onNext: _nextWeek,
                     ),
                   ),
-                  const SizedBox(height: 32),
+                  const SizedBox(height: Responsive.xl),
 
                   // KPI Grid
                   _buildKpiGrid(),
-                  const SizedBox(height: 32),
+                  const SizedBox(height: Responsive.xl),
 
                   // Charts Row
                   _buildChartsSection(),
-                  const SizedBox(height: 32),
-
-                  // Quick Actions
-                  const Text(
-                    'إجراءات سريعة',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: LaapakColors.neutral900,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Wrap(
-                    spacing: 16,
-                    runSpacing: 16,
-                    children: [
-                      _buildActionCard(
-                        title: 'إدارة الأرباح',
-                        icon: Icons.monetization_on_outlined,
-                        color: LaapakColors.brandPrimary,
-                        onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const ProfitManagementScreen(),
-                          ),
-                        ),
-                      ),
-                      _buildActionCard(
-                        title: 'المصروفات',
-                        icon: Icons.receipt_long_outlined,
-                        color: LaapakColors.danger,
-                        onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const ExpensesScreen(),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
                 ],
               ),
             ),
@@ -210,7 +171,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         final width = constraints.maxWidth;
         // Logic: Desktop (>900) 4 columns. Tablet (>600) 2 columns. Mobile 1 column.
         int crossAxisCount = width > 900 ? 4 : (width > 600 ? 2 : 1);
-        double spacing = 16.0;
+        double spacing = Responsive.md;
         double itemWidth =
             (width - ((crossAxisCount - 1) * spacing)) / crossAxisCount;
 
@@ -267,7 +228,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               _buildTrendCard(),
-              const SizedBox(height: 24),
+              const SizedBox(height: Responsive.lg),
               _buildExpenseCard(),
             ],
           );
@@ -276,7 +237,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(flex: 2, child: _buildTrendCard()),
-              const SizedBox(width: 24),
+              const SizedBox(width: Responsive.lg),
               Expanded(flex: 1, child: _buildExpenseCard()),
             ],
           );
@@ -288,15 +249,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget _buildTrendCard() {
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(24.0),
+        padding: const EdgeInsets.all(Responsive.cardPadding),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
               'تطور الأداء المالي',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              style: LaapakTypography.titleMedium,
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: Responsive.lg),
             SizedBox(
               height: 300,
               child: TrendChart(
@@ -318,61 +279,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget _buildExpenseCard() {
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(24.0),
+        padding: const EdgeInsets.all(Responsive.cardPadding),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'توزيع المصروفات',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-            ),
-            const SizedBox(height: 24),
+            const Text('توزيع المصروفات', style: LaapakTypography.titleMedium),
+            const SizedBox(height: Responsive.lg),
             SizedBox(
               height: 300,
               child: ExpenseChart(data: _expenseDistribution),
             ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildActionCard({
-    required String title,
-    required IconData icon,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        width: 160,
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: LaapakColors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: LaapakColors.neutral200),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 12,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Column(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, color: color, size: 28),
-            ),
-            const SizedBox(height: 16),
-            Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
           ],
         ),
       ),

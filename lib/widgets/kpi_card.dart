@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:laapak_finance/theme/colors.dart';
+import '../utils/responsive.dart';
 
 class KpiCard extends StatelessWidget {
   final String label;
@@ -20,10 +21,10 @@ class KpiCard extends StatelessWidget {
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: const BorderSide(color: Color.fromRGBO(0, 0, 0, 0.03)),
+        borderRadius: BorderRadius.circular(Responsive.cardRadius),
+        side: const BorderSide(color: LaapakColors.borderLight),
       ),
-      color: LaapakColors.cardBg,
+      color: LaapakColors.surface,
       child: Padding(
         padding: const EdgeInsets.all(24.0),
         child: Column(
@@ -33,7 +34,7 @@ class KpiCard extends StatelessWidget {
             Text(
               label,
               style: const TextStyle(
-                color: LaapakColors.neutral500,
+                color: LaapakColors.textSecondary,
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
               ),
@@ -42,8 +43,8 @@ class KpiCard extends StatelessWidget {
             Text(
               value,
               style: const TextStyle(
-                color: LaapakColors.neutral900,
-                fontSize: 32, // --kpi-value 2rem ~= 32px
+                color: LaapakColors.textPrimary,
+                fontSize: 32,
                 fontWeight: FontWeight.w700,
                 height: 1.2,
               ),
@@ -69,8 +70,8 @@ class _TrendIndicator extends StatelessWidget {
     final isPositive = percent > 0;
     final isNeutral = percent == 0;
     final color = isNeutral
-        ? LaapakColors.neutral500
-        : (isPositive ? LaapakColors.success : LaapakColors.danger);
+        ? LaapakColors.textSecondary
+        : (isPositive ? LaapakColors.success : LaapakColors.error);
 
     final icon = isNeutral
         ? Icons.remove
@@ -94,7 +95,7 @@ class _TrendIndicator extends StatelessWidget {
           Text(
             'عن الأسبوع الماضي',
             style: const TextStyle(
-              color: LaapakColors.neutral500,
+              color: LaapakColors.textSecondary,
               fontSize: 12,
             ),
           ),

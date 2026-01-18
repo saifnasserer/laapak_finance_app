@@ -3,7 +3,7 @@ import '../services/finance_api_service.dart';
 
 import '../widgets/buttons.dart';
 import '../widgets/inputs.dart';
-import '../widgets/responsive.dart';
+import '../utils/responsive.dart';
 
 class CostEntryDialog extends StatefulWidget {
   final int itemId;

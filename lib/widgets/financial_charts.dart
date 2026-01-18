@@ -20,7 +20,7 @@ class TrendChart extends StatelessWidget {
       return const Center(
         child: Text(
           'لا يوجد بيانات',
-          style: TextStyle(color: LaapakColors.neutral500),
+          style: TextStyle(color: LaapakColors.textSecondary),
         ),
       );
     }
@@ -35,7 +35,7 @@ class TrendChart extends StatelessWidget {
           drawVerticalLine: false,
           horizontalInterval: maxY / 5,
           getDrawingHorizontalLine: (value) {
-            return const FlLine(color: LaapakColors.neutral200, strokeWidth: 1);
+            return const FlLine(color: LaapakColors.border, strokeWidth: 1);
           },
         ),
         titlesData: FlTitlesData(
@@ -59,7 +59,7 @@ class TrendChart extends StatelessWidget {
                     child: Text(
                       labels[index],
                       style: const TextStyle(
-                        color: LaapakColors.neutral500,
+                        color: LaapakColors.textSecondary,
                         fontWeight: FontWeight.bold,
                         fontSize: 12,
                       ),
@@ -79,7 +79,7 @@ class TrendChart extends StatelessWidget {
                 return Text(
                   _formatCompact(value),
                   style: const TextStyle(
-                    color: LaapakColors.neutral500,
+                    color: LaapakColors.textSecondary,
                     fontSize: 10,
                   ),
                 );
@@ -101,13 +101,13 @@ class TrendChart extends StatelessWidget {
               (i) => FlSpot(i.toDouble(), revenue[i]),
             ),
             isCurved: true,
-            color: LaapakColors.brandPrimary,
+            color: LaapakColors.primary,
             barWidth: 3,
             isStrokeCapRound: true,
             dotData: const FlDotData(show: false),
             belowBarData: BarAreaData(
               show: true,
-              color: LaapakColors.brandPrimary.withValues(alpha: 0.1),
+              color: LaapakColors.primary.withOpacity(0.1),
             ),
           ),
           // Expenses Line
@@ -117,7 +117,7 @@ class TrendChart extends StatelessWidget {
               (i) => FlSpot(i.toDouble(), expenses[i]),
             ),
             isCurved: true,
-            color: LaapakColors.danger,
+            color: LaapakColors.error,
             barWidth: 2,
             isStrokeCapRound: true,
             dotData: const FlDotData(show: false),
@@ -146,7 +146,7 @@ class ExpenseChart extends StatelessWidget {
       return const Center(
         child: Text(
           'لا يوجد بيانات',
-          style: TextStyle(color: LaapakColors.neutral500),
+          style: TextStyle(color: LaapakColors.textSecondary),
         ),
       );
     }
@@ -156,12 +156,12 @@ class ExpenseChart extends StatelessWidget {
     // Convert map to list for indexing colors
     final entries = data.entries.toList();
     final colors = [
-      LaapakColors.brandPrimary,
+      LaapakColors.primary,
       const Color(0xFF198754),
       const Color(0xFF20C997),
       LaapakColors.warning,
-      LaapakColors.danger,
-      LaapakColors.neutral500,
+      LaapakColors.error,
+      LaapakColors.textSecondary,
     ];
 
     return Row(
@@ -221,7 +221,7 @@ class ExpenseChart extends StatelessWidget {
                         entries[i].key,
                         style: const TextStyle(
                           fontSize: 12,
-                          color: LaapakColors.neutral700,
+                          color: LaapakColors.textPrimary,
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),

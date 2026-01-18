@@ -1,27 +1,28 @@
 import 'package:flutter/material.dart';
 import 'colors.dart';
 import 'typography.dart';
-import '../widgets/responsive.dart';
+import '../utils/responsive.dart';
 
 class AppTheme {
   static ThemeData get lightTheme {
     return ThemeData(
       useMaterial3: true,
-      scaffoldBackgroundColor: LaapakColors.pageBg,
+      scaffoldBackgroundColor: LaapakColors.background,
       colorScheme: ColorScheme.fromSeed(
-        seedColor: LaapakColors.brandPrimary,
-        primary: LaapakColors.brandPrimary,
-        secondary: LaapakColors.brandPrimaryLight,
-        surface: LaapakColors.cardBg,
-        error: LaapakColors.danger,
+        seedColor: LaapakColors.primary,
+        primary: LaapakColors.primary,
+        secondary: LaapakColors.secondary,
+        surface: LaapakColors.surface,
+        error: LaapakColors.error,
+        background: LaapakColors.background,
       ),
       cardTheme: CardThemeData(
-        color: LaapakColors.cardBg,
+        color: LaapakColors.surface,
         elevation: 0,
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(Responsive.cardRadius),
-          side: const BorderSide(color: LaapakColors.neutral200, width: 1),
+          side: const BorderSide(color: LaapakColors.border, width: 1),
         ),
       ),
       fontFamily: LaapakTypography.fontFamily,
@@ -34,10 +35,34 @@ class AppTheme {
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           textStyle: LaapakTypography.button,
-          backgroundColor: LaapakColors.brandPrimary,
-          // Note: Actual gradient buttons use container decoration,
-          // but this sets a default for standard buttons.
+          backgroundColor: LaapakColors.primary,
+          foregroundColor: LaapakColors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(Responsive.buttonRadius),
+          ),
+          padding: Responsive.buttonPadding,
+          elevation: 0,
         ),
+      ),
+      appBarTheme: const AppBarTheme(
+        backgroundColor: LaapakColors.background,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        centerTitle: true,
+        iconTheme: IconThemeData(color: LaapakColors.textPrimary),
+        titleTextStyle: TextStyle(
+          color: LaapakColors.textPrimary,
+          fontSize: 18,
+          fontWeight: FontWeight.w600,
+          fontFamily: LaapakTypography.fontFamily,
+        ),
+      ),
+      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+        backgroundColor: LaapakColors.surface,
+        selectedItemColor: LaapakColors.primary,
+        unselectedItemColor: LaapakColors.textSecondary,
+        type: BottomNavigationBarType.fixed,
+        elevation: 8,
       ),
     );
   }

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme/colors.dart';
-import 'responsive.dart';
+import '../utils/responsive.dart';
 
 class MinimalTextField extends StatefulWidget {
   final TextEditingController? controller;
@@ -31,11 +31,10 @@ class _MinimalTextFieldState extends State<MinimalTextField> {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: LaapakColors
-            .neutral200, // Using slightly darker for input bg or neutral100
-        borderRadius: BorderRadius.circular(Responsive.buttonRadius),
+        color: LaapakColors.surfaceVariant,
+        borderRadius: BorderRadius.circular(Responsive.inputRadius),
         border: Border.all(
-          color: _isFocused ? LaapakColors.brandPrimary : Colors.transparent,
+          color: _isFocused ? LaapakColors.primary : Colors.transparent,
           width: 1.5,
         ),
       ),
@@ -52,13 +51,13 @@ class _MinimalTextFieldState extends State<MinimalTextField> {
           validator: widget.validator,
           decoration: InputDecoration(
             hintText: widget.hintText,
-            hintStyle: const TextStyle(color: LaapakColors.neutral500),
+            hintStyle: const TextStyle(color: LaapakColors.textSecondary),
             prefixIcon: widget.prefixIcon != null
                 ? IconTheme(
                     data: IconThemeData(
                       color: _isFocused
-                          ? LaapakColors.brandPrimary
-                          : LaapakColors.neutral500,
+                          ? LaapakColors.primary
+                          : LaapakColors.textSecondary,
                     ),
                     child: widget.prefixIcon!,
                   )

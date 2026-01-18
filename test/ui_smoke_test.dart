@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:laapak_finance/screens/dashboard_screen.dart';
+
+import 'package:laapak_finance/screens/main_screen.dart';
 import 'package:laapak_finance/screens/profit_management_screen.dart';
 import 'package:laapak_finance/screens/expenses_screen.dart';
 import 'package:laapak_finance/theme/app_theme.dart';
@@ -11,14 +12,15 @@ void main() {
     await initializeDateFormatting('ar', null);
   });
 
-  testWidgets('DashboardScreen Smoke Test', (WidgetTester tester) async {
+  testWidgets('MainScreen Smoke Test', (WidgetTester tester) async {
     await tester.pumpWidget(
-      MaterialApp(theme: AppTheme.lightTheme, home: const DashboardScreen()),
+      MaterialApp(theme: AppTheme.lightTheme, home: const MainScreen()),
     );
-    await tester.pump(); // Allow init state
+    await tester.pumpAndSettle(); // Wait for all animations and futures
     expect(find.text('الإدارة المالية'), findsOneWidget);
-    await tester.pumpAndSettle();
-    expect(find.text('إجراءات سريعة'), findsOneWidget);
+    expect(find.text('الرئيسية'), findsOneWidget);
+    expect(find.text('الأرباح'), findsOneWidget);
+    expect(find.text('المصروفات'), findsOneWidget);
   });
 
   testWidgets('ProfitManagementScreen Smoke Test', (WidgetTester tester) async {
