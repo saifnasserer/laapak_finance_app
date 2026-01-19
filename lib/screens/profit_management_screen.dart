@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../theme/colors.dart';
+import '../services/finance_api_service.dart';
 import '../widgets/week_navigator.dart';
-
-import '../widgets/cost_entry_dialog.dart';
+import 'invoice_details_screen.dart';
 
 class ProfitManagementScreen extends StatefulWidget {
   const ProfitManagementScreen({super.key});
@@ -21,9 +21,9 @@ class _ProfitManagementScreenState extends State<ProfitManagementScreen> {
   bool _isReviewMode = false;
   String _searchQuery = '';
 
-  // Data
+  final FinanceApiService _apiService = FinanceApiService();
+  final Map<String, List<dynamic>> _invoiceCache = {};
   List<dynamic> _invoices = [];
-  Map<String, double> _weekSummary = {'revenue': 0, 'cost': 0, 'profit': 0};
 
   @override
   void initState() {
@@ -34,76 +34,82 @@ class _ProfitManagementScreenState extends State<ProfitManagementScreen> {
 
   void _initializeWeek() {
     final now = DateTime.now();
-    // Start of week (Sunday as per region usually, or Saturday. Let's assume Saturday/Sunday logic from reference)
-    // Reference script: `start.setDate(today.getDate() - today.getDay());` which implies Sunday start if getDay() is standard API.
-    // Let's stick to simple "Start of week" logic.
     _selectedStartDate = now.subtract(Duration(days: now.weekday % 7));
     _selectedEndDate = _selectedStartDate.add(const Duration(days: 6));
   }
 
-  Future<void> _fetchData() async {
+  Future<void> _fetchData({bool forceRefresh = false}) async {
+    final cacheKey = DateFormat('yyyy-MM-dd', 'en').format(_selectedStartDate);
+
+    // Check cache first
+    if (!forceRefresh && _invoiceCache.containsKey(cacheKey)) {
+      setState(() {
+        _invoices = List.from(_invoiceCache[cacheKey]!);
+        _isLoading = false;
+      });
+      return;
+    }
+
     setState(() => _isLoading = true);
     try {
-      // In real implementation:
-      // final data = await _apiService.getProfitData(start: _selectedStartDate, end: _selectedEndDate);
-      // For now, mock or generic fetch
-      // final data = await _apiService
-      //     .getFinancialSummary(); // Just to checking connection or similar
+      final data = await _apiService.getFinancialLedger(
+        startDate: cacheKey,
+        endDate: DateFormat('yyyy-MM-dd', 'en').format(_selectedEndDate),
+        type: 'income',
+        limit: 100, // Fetch enough for the week
+      );
+
+      final List<dynamic> transactions = data['transactions'] ?? [];
+
+      if (transactions.isNotEmpty) {
+        debugPrint('First Transaction Raw: ${transactions.first}');
+      }
+
+      final mappedInvoices = transactions.map((t) {
+        // Map API response to UI model
+        // API fields: id, amount, date, description, cost (assumed), profit (assumed), client_name (assumed)
+        return {
+          'id': t['id'],
+          'date': DateTime.parse(t['date']),
+          'total': (t['amount'] as num).toDouble(),
+          // Ensure cost/profit are handled safely if missing
+          'total_cost': (t['cost'] ?? 0).toDouble(),
+          // 'profit' might need calculation or be present.
+          // If missing, profit = total - cost.
+          'profit': (t['profit'] ?? ((t['amount'] as num) - (t['cost'] ?? 0)))
+              .toDouble(),
+          'status': t['status'] ?? 'completed',
+          // Try to get client name. If not present, parse from description or use fallback
+          'client_name':
+              t['client_name'] ??
+              (t['description'] as String).split('-').last.trim(),
+          'has_missing_costs': t['has_missing_costs'],
+          // Keep original object for referencing if needed
+          'raw': t,
+        };
+      }).toList();
 
       setState(() {
         _isLoading = false;
-        // Mock Invoices
-        _invoices = [
-          {
-            'id': 'INV-1023',
-            'date': DateTime.now().subtract(const Duration(days: 1)),
-            'items_count': 3,
-            'total': 5000.0,
-            'total_cost': 3500.0,
-            'profit': 1500.0,
-            'status': 'paid',
-            'client_name': 'Ahmed Ali',
-          },
-          {
-            'id': 'INV-1024',
-            'date': DateTime.now(),
-            'items_count': 5,
-            'total': 12000.0,
-            'total_cost': 0.0, // Missing Cost
-            'profit': 12000.0,
-            'status': 'pending',
-            'client_name': 'Global Tech Co',
-          },
-          {
-            'id': 'INV-1025',
-            'date': DateTime.now().subtract(const Duration(days: 2)),
-            'items_count': 2,
-            'total': 2200.0,
-            'total_cost': 1800.0,
-            'profit': 400.0,
-            'status': 'completed',
-            'client_name': 'Sara Hassan',
-          },
-        ];
-
-        _calculateSummary();
+        _invoices = mappedInvoices;
+        // Update cache
+        _invoiceCache[cacheKey] = mappedInvoices;
       });
     } catch (e) {
-      setState(() => _isLoading = false);
+      debugPrint('Error loading profit data: $e');
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          // Keep showing empty or maybe show error snackbar
+          // _invoices = [];
+        });
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('فشل تحميل البيانات: $e')));
+      }
     }
   }
 
-  void _calculateSummary() {
-    double revenue = 0;
-    double cost = 0;
-    for (var inv in _invoices) {
-      revenue += (inv['total'] as num).toDouble();
-      cost += (inv['total_cost'] as num).toDouble();
-    }
-    _weekSummary = {'revenue': revenue, 'cost': cost, 'profit': revenue - cost};
-  }
-
-  // .. Week Navigation Logic matches Dashboard ..
   void _previousWeek() {
     setState(() {
       _selectedStartDate = _selectedStartDate.subtract(const Duration(days: 7));
@@ -125,352 +131,332 @@ class _ProfitManagementScreenState extends State<ProfitManagementScreen> {
     final val = amount is num ? amount.toDouble() : 0.0;
     final format = NumberFormat.currency(
       locale: 'ar',
-      symbol: 'ج.م',
+      // symbol: 'ج.m',
       decimalDigits: 0,
     );
     return format.format(val);
   }
 
+  bool _isSearching = false;
+
   @override
   Widget build(BuildContext context) {
+    // Filter logic
     final filteredInvoices = _invoices.where((inv) {
-      final matchSearch = inv['client_name'].toString().toLowerCase().contains(
-        _searchQuery.toLowerCase(),
-      );
-      if (_isReviewMode) {
-        return matchSearch && ((inv['total_cost'] as num) == 0);
+      if (_isReviewMode && (inv['total_cost'] as num) > 0) return false;
+      if (_searchQuery.isNotEmpty) {
+        final q = _searchQuery.toLowerCase();
+        final clientName = (inv['client_name'] as String? ?? '').toLowerCase();
+        final id = (inv['id'].toString()).toLowerCase();
+        return clientName.contains(q) || id.contains(q);
       }
-      return matchSearch;
+      return true;
     }).toList();
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('إدارة الأرباح والتكاليف'),
-        centerTitle: true,
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          children: [
-            // Week Nav
-            Center(
-              child: WeekNavigator(
-                startDate: _selectedStartDate,
-                endDate: _selectedEndDate,
-                isLoading: _isLoading,
-                onPrev: _previousWeek,
-                onNext: _nextWeek,
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // Summary Cards (Row of 3)
-            LayoutBuilder(
-              builder: (context, constraints) {
-                final width = constraints.maxWidth;
-                final isMobile = width < 800;
-                // On mobile stack, on desktop row
-                return Flex(
-                  direction: isMobile ? Axis.vertical : Axis.horizontal,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    _buildSummaryCard(
-                      'إيرادات الأسبوع',
-                      _weekSummary['revenue']!,
-                      LaapakColors.textPrimary,
-                      isMobile,
+      backgroundColor: LaapakColors.background,
+      body: CustomScrollView(
+        slivers: [
+          SliverAppBar(
+            pinned: true,
+            floating: true,
+            backgroundColor: LaapakColors.surface,
+            elevation: 2,
+            toolbarHeight: 56, // Standard height
+            // Title: Search Field OR WeekNavigator
+            title: _isSearching
+                ? TextField(
+                    autofocus: true,
+                    onChanged: (val) => setState(() => _searchQuery = val),
+                    style: const TextStyle(fontSize: 14),
+                    decoration: const InputDecoration(
+                      hintText: 'بحث...',
+                      border: InputBorder.none,
+                      enabledBorder: InputBorder.none,
+                      focusedBorder: InputBorder.none,
+                      hintStyle: TextStyle(color: LaapakColors.textSecondary),
                     ),
-                    if (isMobile) const SizedBox(height: 12),
-                    _buildSummaryCard(
-                      'التكاليف (الأسبوع)',
-                      _weekSummary['cost']!,
-                      LaapakColors.error,
-                      isMobile,
+                  )
+                : WeekNavigator(
+                    startDate: _selectedStartDate,
+                    endDate: _selectedEndDate,
+                    isLoading: _isLoading,
+                    onPrev: _previousWeek,
+                    onNext: _nextWeek,
+                  ),
+            centerTitle: true,
+            // Actions: Search Icon/Close, Review Toggle, Nav Shortcut
+            actions: [
+              if (_isSearching)
+                IconButton(
+                  icon: const Icon(Icons.close),
+                  color: LaapakColors.textSecondary,
+                  onPressed: () {
+                    setState(() {
+                      _isSearching = false;
+                      _searchQuery = '';
+                    });
+                  },
+                )
+              else ...[
+                PopupMenuButton<String>(
+                  icon: const Icon(
+                    Icons.more_vert,
+                    color: LaapakColors.textPrimary,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  onSelected: (value) {
+                    switch (value) {
+                      case 'search':
+                        setState(() => _isSearching = true);
+                        break;
+                      case 'review':
+                        setState(() => _isReviewMode = !_isReviewMode);
+                        break;
+                    }
+                  },
+                  itemBuilder: (BuildContext context) => [
+                    // Search Item
+                    const PopupMenuItem(
+                      value: 'search',
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.search,
+                            size: 20,
+                            color: LaapakColors.textSecondary,
+                          ),
+                          SizedBox(width: 12),
+                          Text('بحث'),
+                        ],
+                      ),
                     ),
-                    if (isMobile) const SizedBox(height: 12),
-                    _buildSummaryCard(
-                      'صافي الربح',
-                      _weekSummary['profit']!,
-                      LaapakColors.success,
-                      isMobile,
+                    // Review Mode Item
+                    PopupMenuItem(
+                      value: 'review',
+                      child: Row(
+                        children: [
+                          Icon(
+                            _isReviewMode
+                                ? Icons.check_circle
+                                : Icons.rate_review_outlined,
+                            size: 20,
+                            color: _isReviewMode
+                                ? LaapakColors.success
+                                : LaapakColors.textSecondary,
+                          ),
+                          const SizedBox(width: 12),
+                          Text(
+                            _isReviewMode ? 'عرض الكل' : 'وضع المراجعة',
+                            style: TextStyle(
+                              color: _isReviewMode
+                                  ? LaapakColors.success
+                                  : null,
+                              fontWeight: _isReviewMode
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
-                );
-              },
-            ),
-            const SizedBox(height: 32),
+                ),
+                const SizedBox(width: 8),
+              ],
+            ],
+          ),
 
-            // Controls & Table Container
-            Container(
-              decoration: BoxDecoration(
-                color: LaapakColors.surface,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: LaapakColors.border),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.04),
-                    blurRadius: 12,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Column(
-                children: [
-                  // Header: Controls
-                  Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Wrap(
-                      spacing: 16,
-                      runSpacing: 16,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      alignment: WrapAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          'سجل الفواتير',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+          // List
+          _isLoading
+              ? const SliverFillRemaining(
+                  child: Center(child: CircularProgressIndicator()),
+                )
+              : filteredInvoices.isEmpty
+              ? const SliverFillRemaining(
+                  child: Center(child: Text('لا يوجد بيانات')),
+                )
+              : SliverList(
+                  delegate: SliverChildBuilderDelegate((context, index) {
+                    final inv = filteredInvoices[index];
+                    return _buildInvoiceCard(inv);
+                  }, childCount: filteredInvoices.length),
+                ),
 
-                        // Controls Right
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            // Review Toggle
-                            Switch(
-                              value: _isReviewMode,
-                              activeColor: LaapakColors.warning,
-                              onChanged: (val) =>
-                                  setState(() => _isReviewMode = val),
-                            ),
-                            Text(
-                              'وضع المراجعة',
-                              style: TextStyle(
-                                color: _isReviewMode
-                                    ? LaapakColors.warning
-                                    : LaapakColors.textSecondary,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-
-                            // Search (Simplified as Icon for mobile, expanded for desktop could be better but let's keep it simple)
-                            SizedBox(
-                              width: 200,
-                              height: 40,
-                              child: TextField(
-                                onChanged: (val) =>
-                                    setState(() => _searchQuery = val),
-                                decoration: InputDecoration(
-                                  hintText: 'بحث باسم العميل...',
-                                  prefixIcon: const Icon(
-                                    Icons.search,
-                                    size: 20,
-                                  ),
-                                  contentPadding: const EdgeInsets.symmetric(
-                                    vertical: 0,
-                                    horizontal: 16,
-                                  ),
-                                  filled: true,
-                                  fillColor: LaapakColors.surfaceVariant,
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(20),
-                                    borderSide: BorderSide.none,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  const Divider(height: 1, color: LaapakColors.border),
-
-                  // Table
-                  _isLoading
-                      ? const Padding(
-                          padding: EdgeInsets.all(32),
-                          child: Center(child: CircularProgressIndicator()),
-                        )
-                      : filteredInvoices.isEmpty
-                      ? const Padding(
-                          padding: EdgeInsets.all(32),
-                          child: Center(child: Text('لا يوجد بيانات')),
-                        )
-                      : ListView.separated(
-                          physics: const NeverScrollableScrollPhysics(),
-                          shrinkWrap: true,
-                          itemCount: filteredInvoices.length,
-                          separatorBuilder: (_, __) => const Divider(
-                            height: 1,
-                            color: LaapakColors.border,
-                          ),
-                          itemBuilder: (context, index) {
-                            final inv = filteredInvoices[index];
-                            final hasMissingCost =
-                                (inv['total_cost'] as num) == 0;
-
-                            return ListTile(
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 8,
-                              ),
-                              tileColor: (_isReviewMode && hasMissingCost)
-                                  ? LaapakColors.warning.withOpacity(0.1)
-                                  : null,
-                              leading: Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: LaapakColors.surfaceVariant,
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: const Icon(
-                                  Icons.receipt,
-                                  color: LaapakColors.textSecondary,
-                                ),
-                              ),
-                              title: Text(
-                                '${inv['client_name']} (#${inv['id'].toString().split('-').last})',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              subtitle: Text(
-                                DateFormat('yyyy-MM-dd').format(inv['date']),
-                              ),
-                              trailing: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    crossAxisAlignment: CrossAxisAlignment.end,
-                                    children: [
-                                      Text(
-                                        _formattedCurrency(inv['total']),
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          color: LaapakColors.primary,
-                                        ),
-                                      ),
-                                      Text(
-                                        hasMissingCost
-                                            ? 'تكلفة مفقودة!'
-                                            : _formattedCurrency(
-                                                inv['total_cost'],
-                                              ),
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          color: hasMissingCost
-                                              ? LaapakColors.error
-                                              : LaapakColors.textSecondary,
-                                          fontWeight: hasMissingCost
-                                              ? FontWeight.bold
-                                              : FontWeight.normal,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(width: 16),
-                                  if (hasMissingCost)
-                                    OutlinedButton(
-                                      onPressed: () {
-                                        // Show Cost Entry Dialog (Mocked action - normally would show items list first)
-                                        showDialog(
-                                          context: context,
-                                          builder: (_) => CostEntryDialog(
-                                            itemId: 0, // Mock ID
-                                            itemName: "عنصر فاتورة غير محدد",
-                                            onSuccess: () {
-                                              _fetchData();
-                                              if (mounted) {
-                                                ScaffoldMessenger.of(
-                                                  context,
-                                                ).showSnackBar(
-                                                  const SnackBar(
-                                                    content: Text(
-                                                      'تم تحديث التكلفة (محاكاة)',
-                                                    ),
-                                                  ),
-                                                );
-                                              }
-                                            },
-                                          ),
-                                        );
-                                      },
-                                      style: OutlinedButton.styleFrom(
-                                        foregroundColor: LaapakColors.error,
-                                        side: const BorderSide(
-                                          color: LaapakColors.error,
-                                        ),
-                                      ),
-                                      child: const Text('تعديل'),
-                                    )
-                                  else
-                                    const Icon(
-                                      Icons.chevron_right,
-                                      color: LaapakColors.textSecondary,
-                                    ),
-                                ],
-                              ),
-                              onTap: () {
-                                // View Filters Details
-                              },
-                            );
-                          },
-                        ),
-                ],
-              ),
-            ),
-          ],
-        ),
+          // Bottom Padding
+          const SliverPadding(padding: EdgeInsets.only(bottom: 80)),
+        ],
       ),
     );
   }
 
-  Widget _buildSummaryCard(
-    String label,
-    double value,
-    Color color,
-    bool isMobile,
-  ) {
+  bool _isInvoiceIncomplete(Map<String, dynamic> inv) {
+    // 1. Prefer local flag if set (from details screen return)
+    if (inv.containsKey('has_missing_costs')) {
+      return inv['has_missing_costs'] == true;
+    }
+
+    // 2. Check for items in the list object (if API returns them)
+    final items = inv['InvoiceItems'] ?? inv['invoice_items'];
+    if (items != null && items is List && items.isNotEmpty) {
+      return items.any((item) {
+        // Handle various potential cost field names or types
+        final costVal = item['cost_price'] ?? item['cost'];
+        final cost = double.tryParse(costVal.toString()) ?? 0;
+        return cost == 0;
+      });
+    }
+
+    // 3. Fallback: If total cost is 0, it's definitely incomplete (or free, but assuming incomplete for profit tracking)
+    // This is imperfect for partial costs but best we can do without item details
+    return (inv['total_cost'] as num) == 0;
+  }
+
+  Widget _buildInvoiceCard(dynamic inv) {
+    // Check local flag or fallback to zero-cost check
+    final bool hasMissingCost = _isInvoiceIncomplete(inv);
+
     return Container(
-      width: isMobile ? double.infinity : null,
-      constraints: isMobile ? null : const BoxConstraints(minWidth: 250),
-      padding: const EdgeInsets.all(20),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       decoration: BoxDecoration(
         color: LaapakColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: LaapakColors.border),
-        // No shadow to match clean look or subtle
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04), // --card-shadow
-            blurRadius: 12,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: hasMissingCost ? LaapakColors.error : LaapakColors.border,
+          width: hasMissingCost ? 1.5 : 1.0,
+        ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: const TextStyle(color: LaapakColors.textSecondary),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            _formattedCurrency(value),
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: color,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(24),
+        onTap: () async {
+          final result = await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => InvoiceDetailsScreen(
+                invoiceId: inv['id'].toString(),
+                onUpdate:
+                    () {}, // No-op, rely on return value to avoid full refresh
+              ),
             ),
+          );
+
+          if (result != null && result is Map && mounted) {
+            setState(() {
+              final index = _invoices.indexWhere((i) => i['id'] == inv['id']);
+              if (index != -1) {
+                // Update local structure
+                final updated = Map<String, dynamic>.from(_invoices[index]);
+                updated['total_cost'] = result['totalCost'];
+                updated['has_missing_costs'] = result['hasMissingCosts'];
+
+                // Recalculate profit
+                final total = (updated['total'] as num).toDouble();
+                final cost = (updated['total_cost'] as num).toDouble();
+                updated['profit'] = total - cost;
+
+                _invoices[index] = updated;
+
+                // Update cache as well
+                final cacheKey = DateFormat(
+                  'yyyy-MM-dd',
+                  'en',
+                ).format(_selectedStartDate);
+                if (_invoiceCache.containsKey(cacheKey)) {
+                  final cachedList = List<dynamic>.from(
+                    _invoiceCache[cacheKey]!,
+                  );
+                  final cachedIndex = cachedList.indexWhere(
+                    (i) => i['id'] == inv['id'],
+                  );
+                  if (cachedIndex != -1) {
+                    cachedList[cachedIndex] = updated;
+                    _invoiceCache[cacheKey] = cachedList;
+                  }
+                }
+              }
+            });
+          }
+        },
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              // 1. Icon / Avatar to fill space ("Less Empty")
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: hasMissingCost
+                      ? LaapakColors.error.withOpacity(0.1)
+                      : LaapakColors.primary.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.receipt_long_rounded,
+                  color: hasMissingCost
+                      ? LaapakColors.error
+                      : LaapakColors.primary,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 16),
+
+              // 2. Main Info (Client + Date)
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      inv['client_name'],
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      DateFormat('yyyy-MM-dd').format(inv['date']),
+                      style: const TextStyle(
+                        color: LaapakColors.textSecondary,
+                        fontSize: 13,
+                      ),
+                    ),
+                    if (!hasMissingCost || (inv['total_cost'] as num) > 0) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        'التكلفة: ${_formattedCurrency(inv['total_cost'])}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: LaapakColors.textSecondary.withOpacity(0.7),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+
+              // 3. Profit Amount (Centered vertically)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                child: Center(
+                  child: Text(
+                    _formattedCurrency(inv['profit']),
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: (inv['profit'] as num) > 0
+                          ? LaapakColors.success
+                          : LaapakColors.textPrimary,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

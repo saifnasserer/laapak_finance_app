@@ -28,28 +28,21 @@ class WeekNavigator extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: LaapakColors.white,
+        color: Colors.transparent, // Changed to transparent
         borderRadius: BorderRadius.circular(50),
-        border: Border.all(color: LaapakColors.border),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04), // --card-shadow
-            blurRadius: 12,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        // Removed border and boxShadow
       ),
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           // Previous Button
-          _NavButton(icon: Icons.chevron_right, onTap: onPrev),
+          _NavButton(icon: Icons.chevron_left, onTap: onPrev),
 
           // Date Display
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            constraints: const BoxConstraints(minWidth: 150),
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            constraints: const BoxConstraints(minWidth: 100),
             alignment: Alignment.center,
             child: isLoading
                 ? const SizedBox(
@@ -62,14 +55,14 @@ class WeekNavigator extends StatelessWidget {
                     style: const TextStyle(
                       color: LaapakColors.textPrimary,
                       fontWeight: FontWeight.w600,
-                      fontSize: 16,
+                      fontSize: 14,
                     ),
                     textDirection: TextDirection.rtl,
                   ),
           ),
 
           // Next Button
-          _NavButton(icon: Icons.chevron_left, onTap: onNext),
+          _NavButton(icon: Icons.chevron_right, onTap: onNext),
         ],
       ),
     );

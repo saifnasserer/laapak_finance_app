@@ -4,9 +4,9 @@ import 'package:intl/intl.dart';
 import '../services/finance_api_service.dart';
 import '../widgets/week_navigator.dart';
 import '../widgets/kpi_card.dart';
+import '../widgets/hero_kpi_card.dart';
 import '../widgets/financial_charts.dart';
 import '../theme/colors.dart';
-import '../theme/typography.dart';
 import '../utils/responsive.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -28,67 +28,85 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Map<String, double> _expenseDistribution = {};
   List<dynamic> _trendData = [];
 
+  // Cache
+  final Map<String, Map<String, dynamic>> _dashboardCache = {};
+
   @override
   void initState() {
     super.initState();
-    _initializeDateRange();
+    _initializeWeek(); // Sync with other screens to default to current week
     _fetchData();
   }
 
-  void _initializeDateRange() {
+  void _initializeWeek() {
     final now = DateTime.now();
-    // Default to current month start/end for the dashboard view
-    _selectedStartDate = DateTime(now.year, now.month, 1);
-    final nextMonth = DateTime(now.year, now.month + 1, 1);
-    _selectedEndDate = nextMonth.subtract(const Duration(days: 1));
+    _selectedStartDate = now.subtract(Duration(days: now.weekday % 7));
+    _selectedEndDate = _selectedStartDate.add(const Duration(days: 6));
   }
 
-  Future<void> _fetchData() async {
+  Future<void> _fetchData({bool forceRefresh = false}) async {
+    final cacheKey = DateFormat('yyyy-MM-dd', 'en').format(_selectedStartDate);
+
+    if (!forceRefresh && _dashboardCache.containsKey(cacheKey)) {
+      final cached = _dashboardCache[cacheKey]!;
+      setState(() {
+        _summaryData = cached['summary'];
+        _trendData = cached['trend'];
+        _expenseDistribution = cached['expenses'];
+        _isLoading = false;
+      });
+      return;
+    }
+
     setState(() => _isLoading = true);
 
     try {
-      // In a real scenario, we would pass dates to the API
-      // final data = await _apiService.getFinancialSummary(start: _selectedStartDate, end: _selectedEndDate);
-      // For now, using the existing fetch or mock
+      // API integration: In real app, pass dates. Using mock/existing for now as per previous code.
+      // We will assume the API returns data relevant to the timeframe or we filter it.
+      // For this refactor, we keep the existing mock data generation but structure it for the cache.
       await _apiService.getFinancialSummary();
 
       if (mounted) {
+        final newSummary = {
+          'revenue': 15250.0,
+          'expenses': 4500.0,
+          'net_profit': 10750.0, // Revenue - Expenses
+          'margin': 70.5,
+        };
+
+        final newTrend = [
+          {'label': 'Sat', 'revenue': 2000.0, 'expenses': 500.0},
+          {'label': 'Sun', 'revenue': 3500.0, 'expenses': 1200.0},
+          {'label': 'Mon', 'revenue': 1000.0, 'expenses': 300.0},
+          {'label': 'Tue', 'revenue': 4500.0, 'expenses': 1500.0},
+          {'label': 'Wed', 'revenue': 2750.0, 'expenses': 800.0},
+          {'label': 'Thu', 'revenue': 1500.0, 'expenses': 200.0},
+          {'label': 'Fri', 'revenue': 0.0, 'expenses': 0.0},
+        ];
+
+        final newExpenses = {
+          'تشغيل': 2000.0,
+          'رواتب': 1500.0,
+          'نثريات': 1000.0,
+        };
+
         setState(() {
-          _summaryData = {
-            'revenue': 15250.0, // Mock or from data
-            'expenses': 4500.0,
-            'net_profit': 10750.0,
-            'margin': 70.5,
-          };
-
-          // Mocking Chart Data until API update
-          _trendData = [
-            {'label': 'P1', 'revenue': 4000.0, 'expenses': 1000.0},
-            {'label': 'P2', 'revenue': 3500.0, 'expenses': 1200.0},
-            {'label': 'P3', 'revenue': 5000.0, 'expenses': 1500.0},
-            {'label': 'P4', 'revenue': 2750.0, 'expenses': 800.0},
-          ];
-
-          _expenseDistribution = {
-            'Operational': 2000.0,
-            'Salaries': 1500.0,
-            'Other': 1000.0,
-          };
-
+          _summaryData = newSummary;
+          _trendData = newTrend;
+          _expenseDistribution = newExpenses;
           _isLoading = false;
+
+          _dashboardCache[cacheKey] = {
+            'summary': newSummary,
+            'trend': newTrend,
+            'expenses': newExpenses,
+          };
         });
       }
     } catch (e) {
       if (mounted) {
         setState(() {
           _isLoading = false;
-          // Fallback mocks
-          _summaryData = {
-            'revenue': 0.0,
-            'expenses': 0.0,
-            'net_profit': 0.0,
-            'margin': 0.0,
-          };
         });
       }
     }
@@ -96,8 +114,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   void _previousWeek() {
     setState(() {
-      // Shifting by months for dashboard usually, or weeks if strictly weekly
-      // Based on WeekNavigator, let's do weeks for consistency
       _selectedStartDate = _selectedStartDate.subtract(const Duration(days: 7));
       _selectedEndDate = _selectedEndDate.subtract(const Duration(days: 7));
     });
@@ -113,14 +129,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   String _formattedCurrency(dynamic amount) {
-    if (amount == null) return "0 EGP";
+    if (amount == null) return "0";
     final val = amount is num
         ? amount.toDouble()
         : double.tryParse(amount.toString()) ?? 0.0;
     final format = NumberFormat.currency(
       locale: 'ar',
-      symbol: 'EGP',
       decimalDigits: 0,
+      symbol: '', // No symbol for cleaner UI
     );
     return format.format(val);
   }
@@ -128,169 +144,167 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('الإدارة المالية'),
-        centerTitle: true,
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-      ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              padding: Responsive.screenPadding,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Week Navigator
-                  Center(
-                    child: WeekNavigator(
-                      startDate: _selectedStartDate,
-                      endDate: _selectedEndDate,
-                      isLoading: _isLoading,
-                      onPrev: _previousWeek,
-                      onNext: _nextWeek,
-                    ),
-                  ),
-                  const SizedBox(height: Responsive.xl),
-
-                  // KPI Grid
-                  _buildKpiGrid(),
-                  const SizedBox(height: Responsive.xl),
-
-                  // Charts Row
-                  _buildChartsSection(),
-                ],
-              ),
+      backgroundColor: LaapakColors.background,
+      body: CustomScrollView(
+        slivers: [
+          // 1. App Bar with Week Navigator
+          SliverAppBar(
+            pinned: true,
+            floating: true,
+            backgroundColor: LaapakColors.background,
+            elevation: 0,
+            centerTitle: false,
+            title: WeekNavigator(
+              startDate: _selectedStartDate,
+              endDate: _selectedEndDate,
+              isLoading: _isLoading,
+              onPrev: _previousWeek,
+              onNext: _nextWeek,
             ),
-    );
-  }
-
-  Widget _buildKpiGrid() {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final width = constraints.maxWidth;
-        // Logic: Desktop (>900) 4 columns. Tablet (>600) 2 columns. Mobile 1 column.
-        int crossAxisCount = width > 900 ? 4 : (width > 600 ? 2 : 1);
-        double spacing = Responsive.md;
-        double itemWidth =
-            (width - ((crossAxisCount - 1) * spacing)) / crossAxisCount;
-
-        return Wrap(
-          spacing: spacing,
-          runSpacing: spacing,
-          children: [
-            SizedBox(
-              width: itemWidth,
-              child: KpiCard(
-                label: 'إجمالي الإيرادات',
-                value: _formattedCurrency(_summaryData['revenue']),
-                changePercent: 12.5,
+            actions: [
+              IconButton(
+                icon: const Icon(
+                  Icons.refresh,
+                  color: LaapakColors.textSecondary,
+                ),
+                onPressed: () => _fetchData(forceRefresh: true),
               ),
-            ),
-            SizedBox(
-              width: itemWidth,
-              child: KpiCard(
-                label: 'إجمالي المصروفات',
-                value: _formattedCurrency(_summaryData['expenses']),
-                changePercent: -2.1,
-              ),
-            ),
-            SizedBox(
-              width: itemWidth,
-              child: KpiCard(
+              const SizedBox(width: 8),
+            ],
+          ),
+
+          // 2. Hero KPI (Net Profit)
+          SliverPadding(
+            padding: const EdgeInsets.all(16),
+            sliver: SliverToBoxAdapter(
+              child: HeroKpiCard(
                 label: 'صافي الربح',
                 value: _formattedCurrency(_summaryData['net_profit']),
                 changePercent: 8.4,
               ),
             ),
-            SizedBox(
-              width: itemWidth,
-              child: KpiCard(
-                label: 'هامش الربح',
-                value: '${_summaryData['margin']}%',
-                isCurrency: false,
-                changePercent: 1.2,
+          ),
+
+          // 3. Key Metrics Grid
+          SliverPadding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            sliver: SliverGrid.count(
+              crossAxisCount: 2,
+              mainAxisSpacing: 12,
+              crossAxisSpacing: 12,
+              childAspectRatio: 1.5,
+              children: [
+                KpiCard(
+                  label: 'الإيرادات',
+                  value: _formattedCurrency(_summaryData['revenue']),
+                  changePercent: 12.5,
+                ),
+                KpiCard(
+                  label: 'المصروفات',
+                  value: _formattedCurrency(_summaryData['expenses']),
+                  changePercent: -2.1,
+                ),
+              ],
+            ),
+          ),
+
+          // 4. Charts Section Title
+          const SliverPadding(
+            padding: EdgeInsets.fromLTRB(16, 24, 16, 8),
+            sliver: SliverToBoxAdapter(
+              child: Text(
+                'التحليل البياني',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: LaapakColors.textPrimary,
+                ),
               ),
             ),
-          ],
-        );
-      },
-    );
-  }
+          ),
 
-  Widget _buildChartsSection() {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isMobile = constraints.maxWidth < 900;
-
-        if (isMobile) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _buildTrendCard(),
-              const SizedBox(height: Responsive.lg),
-              _buildExpenseCard(),
-            ],
-          );
-        } else {
-          return Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(flex: 2, child: _buildTrendCard()),
-              const SizedBox(width: Responsive.lg),
-              Expanded(flex: 1, child: _buildExpenseCard()),
-            ],
-          );
-        }
-      },
-    );
-  }
-
-  Widget _buildTrendCard() {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(Responsive.cardPadding),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'تطور الأداء المالي',
-              style: LaapakTypography.titleMedium,
-            ),
-            const SizedBox(height: Responsive.lg),
-            SizedBox(
-              height: 300,
-              child: TrendChart(
-                labels: _trendData.map((e) => e['label'] as String).toList(),
-                revenue: _trendData
-                    .map((e) => (e['revenue'] as num).toDouble())
-                    .toList(),
-                expenses: _trendData
-                    .map((e) => (e['expenses'] as num).toDouble())
-                    .toList(),
+          // 5. Trend Chart
+          SliverPadding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            sliver: SliverToBoxAdapter(
+              child: Card(
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(Responsive.cardRadius),
+                  side: const BorderSide(color: LaapakColors.borderLight),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'الإيرادات والمصروفات',
+                        style: TextStyle(
+                          color: LaapakColors.textSecondary,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      SizedBox(
+                        height: 250,
+                        child: TrendChart(
+                          labels: _trendData
+                              .map((e) => e['label'] as String)
+                              .toList(),
+                          revenue: _trendData
+                              .map((e) => (e['revenue'] as num).toDouble())
+                              .toList(),
+                          expenses: _trendData
+                              .map((e) => (e['expenses'] as num).toDouble())
+                              .toList(),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
-          ],
-        ),
-      ),
-    );
-  }
+          ),
 
-  Widget _buildExpenseCard() {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(Responsive.cardPadding),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('توزيع المصروفات', style: LaapakTypography.titleMedium),
-            const SizedBox(height: Responsive.lg),
-            SizedBox(
-              height: 300,
-              child: ExpenseChart(data: _expenseDistribution),
+          // 6. Expense Breakdown
+          SliverPadding(
+            padding: const EdgeInsets.all(16),
+            sliver: SliverToBoxAdapter(
+              child: Card(
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(Responsive.cardRadius),
+                  side: const BorderSide(color: LaapakColors.borderLight),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'توزيع المصروفات',
+                        style: TextStyle(
+                          color: LaapakColors.textSecondary,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      SizedBox(
+                        height: 250,
+                        child: ExpenseChart(data: _expenseDistribution),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ),
-          ],
-        ),
+          ),
+
+          const SliverPadding(padding: EdgeInsets.only(bottom: 40)),
+        ],
       ),
     );
   }

@@ -42,6 +42,12 @@ class FinanceApiService {
     int offset = 0,
   }) async {
     try {
+      if (kDebugMode) {
+        print('GET $_baseUrl/ledger');
+        print(
+          'Params: ${{if (startDate != null) 'startDate': startDate, if (endDate != null) 'endDate': endDate, 'type': type, 'limit': limit, 'offset': offset}}',
+        );
+      }
       final response = await _dio.get(
         '$_baseUrl/ledger',
         queryParameters: {
@@ -61,31 +67,33 @@ class FinanceApiService {
 
   Future<void> updateInvoiceItemCost(int itemId, double costPrice) async {
     try {
-      // Note: Endpoint path corrected based on API guide context, though guide said /financial/invoice-items...
-      // Guide says: PATCH /financial/invoice-items/{id}/cost
-      // Base URL is .../financial
-      // So it should be just /invoice-items/{id}/cost relative to base, or absolute?
-      // Guide base URL: https://reports.laapak.com/api/v2/external/financial
-      // Endpoint: PATCH /financial/invoice-items/{id}/cost
-      // This implies the endpoint might be outside the base URL if it repeats /financial.
-      // However, usually it's relative. I will assume it's relative to the parent of base if it starts with /financial or just append if it's consistent.
-      // Let's assume the guide meant relative to root api/v2/external.
-      // But for safety, I will use the path from the guide but check if I need to adjust.
-      // actually the guide says "Base URL: .../financial", and endpoint "PATCH /financial/invoice-items...".
-      // This looks like a copy-paste in the guide. I will try to use the full path or assume relative.
-      // Let's stick to the base url being the prefix.
-      // If base is .../financial, then appending /invoice-items makes sense.
-      // I will remove the duplicate /financial prefix if it exists in the append.
+      // Endpoint: /financial/invoice-items/{id}/cost
+      // Base URL already includes /financial
       await _dio.patch(
-        '$_baseUrl.replaceFirst("/financial", "")/financial/invoice-items/$itemId/cost',
+        '$_baseUrl/invoice-items/$itemId/cost',
         data: {'cost_price': costPrice},
       );
-      // actually, let's just use the full url to be safe if `_baseUrl` assumes .../financial
-      // Let's blindly follow the guide's specific endpoint path which might be a typo in guide or specific routing.
-      // I will assume the guide meant the resource is under financial.
-      // api/v2/external/financial/invoice-items/...
     } catch (e) {
-      if (kDebugMode) print('Error updating item cost: $e');
+      if (kDebugMode) {
+        print('Error updating item cost: $e');
+        if (e is DioException) {
+          print('Response Data: ${e.response?.data}');
+          print('Response Headers: ${e.response?.headers}');
+        }
+      }
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> getInvoiceDetails(String invoiceId) async {
+    try {
+      // Endpoint: /api/v2/external/invoices/{id}
+      // _baseUrl is /api/v2/external/financial
+      final url = _baseUrl.replaceAll('/financial', '/invoices/$invoiceId');
+      final response = await _dio.get(url);
+      return response.data;
+    } catch (e) {
+      if (kDebugMode) print('Error fetching invoice details: $e');
       rethrow;
     }
   }

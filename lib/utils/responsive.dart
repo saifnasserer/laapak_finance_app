@@ -70,8 +70,8 @@ class Responsive {
   /// Card margin as EdgeInsets
   static const EdgeInsets cardMarginInsets = EdgeInsets.all(md);
 
-  /// Card border radius (12-16px as per guidelines)
-  static const double cardRadius = 14.0;
+  /// Card border radius (Updated for circular look)
+  static const double cardRadius = 24.0;
 
   // ==================== Button Sizing ====================
 
@@ -114,7 +114,7 @@ class Responsive {
   static const EdgeInsets inputPaddingInsets = EdgeInsets.all(md);
 
   /// Input field border radius
-  static const double inputRadius = 12.0;
+  static const double inputRadius = 24.0;
 
   // ==================== Icon Sizing ====================
 

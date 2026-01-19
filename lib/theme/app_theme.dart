@@ -44,6 +44,24 @@ class AppTheme {
           elevation: 0,
         ),
       ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: LaapakColors.surfaceVariant,
+        contentPadding: Responsive.inputPaddingInsets,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(Responsive.inputRadius),
+          borderSide: BorderSide.none,
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(Responsive.inputRadius),
+          borderSide: BorderSide.none,
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(Responsive.inputRadius),
+          borderSide: const BorderSide(color: LaapakColors.primary, width: 2),
+        ),
+        hintStyle: const TextStyle(color: LaapakColors.textSecondary),
+      ),
       appBarTheme: const AppBarTheme(
         backgroundColor: LaapakColors.background,
         elevation: 0,
