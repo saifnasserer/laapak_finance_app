@@ -18,6 +18,8 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
   final FinanceApiService _apiService = FinanceApiService();
   List<Transaction> _expenses = [];
   bool _isLoading = true;
+  bool _hasError = false;
+  String _errorMessage = '';
 
   // Date Filtering
   late DateTime _startDate;
@@ -53,7 +55,11 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
   }
 
   Future<void> _fetchData() async {
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+      _hasError = false;
+      _errorMessage = '';
+    });
     try {
       final data = await _apiService.getFinancialLedger(
         type: 'expense',
@@ -69,27 +75,9 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
       if (mounted) {
         setState(() {
           _isLoading = false;
-          // Mock data for demo/fallback
-          _expenses = [
-            Transaction(
-              id: 'EXP-001',
-              date: DateTime.now().subtract(const Duration(days: 1)),
-              amount: 500,
-              type: 'expense',
-              category: 'إيجار',
-              description: 'إيجار المكتب الشهري',
-              status: 'verified',
-            ),
-            Transaction(
-              id: 'EXP-002',
-              date: DateTime.now(),
-              amount: 120,
-              type: 'expense',
-              category: 'ضيافة',
-              description: 'مشروبات للعملاء',
-              status: 'pending',
-            ),
-          ];
+          _hasError = true;
+          _errorMessage = e.toString();
+          _expenses = []; // Clear mock data/previous data if any
         });
       }
     }
@@ -188,6 +176,63 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
           _isLoading
               ? const SliverFillRemaining(
                   child: Center(child: CircularProgressIndicator()),
+                )
+              : _hasError
+              ? SliverFillRemaining(
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(
+                          Icons.error_outline,
+                          size: 64,
+                          color: LaapakColors.error,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'عذراً، حدث خطأ أثناء تحميل المصروفات',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: LaapakColors.textPrimary,
+                          ),
+                        ),
+                        if (_errorMessage.isNotEmpty) ...[
+                          const SizedBox(height: 8),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 32),
+                            child: Text(
+                              _errorMessage,
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                fontSize: 13,
+                                color: LaapakColors.textSecondary,
+                              ),
+                              maxLines: 3,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                        const SizedBox(height: 24),
+                        ElevatedButton.icon(
+                          onPressed: _fetchData,
+                          icon: const Icon(Icons.refresh),
+                          label: const Text('إعادة المحاولة'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: LaapakColors.primary,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 24,
+                              vertical: 12,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 )
               : _expenses.isEmpty
               ? SliverFillRemaining(

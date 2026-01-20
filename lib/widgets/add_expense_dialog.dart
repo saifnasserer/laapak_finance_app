@@ -146,8 +146,9 @@ class _AddExpenseDialogState extends State<AddExpenseDialog> {
                           );
                         },
                       );
-                      if (picked != null)
+                      if (picked != null) {
                         setState(() => _selectedDate = picked);
+                      }
                     },
                     borderRadius: BorderRadius.circular(
                       Responsive.buttonRadius,

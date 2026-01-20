@@ -46,7 +46,7 @@ dependencies:
 flutter_launcher_icons:
   android: "launcher_icon"
   ios: true
-  image_path: "assets/logo/finance.jpg"
+  image_path: "assets/logo/finance_padded.jpg"
   min_sdk_android: 21
 
 dev_dependencies:
