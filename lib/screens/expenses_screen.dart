@@ -296,8 +296,22 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
         padding: const EdgeInsets.only(left: 24),
         child: const Icon(Icons.delete, color: Colors.white),
       ),
-      onDismissed: (_) {
-        // Implement delete API call here
+      onDismissed: (_) async {
+        try {
+          await _apiService.deleteExpense(int.parse(expense.id));
+          if (mounted) {
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(const SnackBar(content: Text('تم حذف المصروف')));
+          }
+        } catch (e) {
+          if (mounted) {
+            _fetchData(); // Refresh to restore item
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(const SnackBar(content: Text('فشل حذف المصروف')));
+          }
+        }
       },
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -306,61 +320,114 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.grey.withOpacity(0.05),
+              color: Colors.grey.withValues(alpha: 0.05),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
           ],
         ),
         child: ListTile(
+          onTap: () {
+            showDialog(
+              context: context,
+              builder: (context) =>
+                  AddExpenseDialog(onSuccess: _fetchData, expense: expense),
+            );
+          },
           contentPadding: const EdgeInsets.all(16),
           leading: Container(
             width: 50,
             height: 50,
             decoration: BoxDecoration(
-              color: LaapakColors.error.withOpacity(0.1),
+              color:
+                  (expense.expenseType == 'fixed'
+                          ? Colors.orange
+                          : LaapakColors.error)
+                      .withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
-            child: const Icon(
-              Icons.trending_down,
-              color: LaapakColors.error,
+            child: Icon(
+              expense.expenseType == 'fixed'
+                  ? Icons.push_pin
+                  : Icons.trending_down,
+              color: expense.expenseType == 'fixed'
+                  ? Colors.orange
+                  : LaapakColors.error,
               size: 24,
             ),
           ),
           title: Text(
-            expense.category,
+            expense.nameAr ??
+                expense.name ??
+                expense.description ??
+                'بدون عنوان',
             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
           ),
           subtitle: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (expense.description != null &&
-                  expense.description!.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.only(top: 4),
-                  child: Text(
-                    expense.description!,
+              Row(
+                children: [
+                  Text(
+                    expense.category,
                     style: const TextStyle(
                       color: LaapakColors.textSecondary,
                       fontSize: 13,
+                      fontWeight: FontWeight.bold,
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
                   ),
-                ),
+                  if (expense.expenseType != null) ...[
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: LaapakColors.background,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        expense.expenseType == 'fixed' ? 'ثابت' : 'متغير',
+                        style: const TextStyle(
+                          fontSize: 10,
+                          color: LaapakColors.textSecondary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
               const SizedBox(height: 6),
               Row(
                 children: [
                   Icon(
                     Icons.calendar_today,
                     size: 12,
-                    color: LaapakColors.textSecondary.withOpacity(0.7),
+                    color: LaapakColors.textSecondary.withValues(alpha: 0.7),
                   ),
                   const SizedBox(width: 4),
                   Text(
                     DateFormat('d MMM, yyyy', 'ar').format(expense.date),
                     style: TextStyle(
-                      color: LaapakColors.textSecondary.withOpacity(0.7),
+                      color: LaapakColors.textSecondary.withValues(alpha: 0.7),
+                      fontSize: 12,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  const Icon(
+                    Icons.account_balance_wallet_outlined,
+                    size: 12,
+                    color: LaapakColors.textSecondary,
+                  ),
+                  const SizedBox(width: 4),
+                  // Note: Money Location Name is not in Transaction model,
+                  // usually we'd need to fetch or have it in the ledger join.
+                  // For now, if we don't have the name, we show ID or just the icon.
+                  Text(
+                    'الخزنة: ${expense.moneyLocationId ?? "-"}',
+                    style: TextStyle(
+                      color: LaapakColors.textSecondary.withValues(alpha: 0.7),
                       fontSize: 12,
                     ),
                   ),

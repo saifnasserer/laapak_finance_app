@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 
 import '../services/finance_api_service.dart';
@@ -61,52 +62,70 @@ class _DashboardScreenState extends State<DashboardScreen> {
     setState(() => _isLoading = true);
 
     try {
-      // API integration: In real app, pass dates. Using mock/existing for now as per previous code.
-      // We will assume the API returns data relevant to the timeframe or we filter it.
-      // For this refactor, we keep the existing mock data generation but structure it for the cache.
-      await _apiService.getFinancialSummary();
+      final response = await _apiService.getFinancialSummary(
+        startDate: DateFormat('yyyy-MM-dd', 'en').format(_selectedStartDate),
+        endDate: DateFormat('yyyy-MM-dd', 'en').format(_selectedEndDate),
+      );
 
       if (mounted) {
-        final newSummary = {
-          'revenue': 15250.0,
-          'expenses': 4500.0,
-          'net_profit': 10750.0, // Revenue - Expenses
-          'margin': 70.5,
-        };
-
-        final newTrend = [
-          {'label': 'Sat', 'revenue': 2000.0, 'expenses': 500.0},
-          {'label': 'Sun', 'revenue': 3500.0, 'expenses': 1200.0},
-          {'label': 'Mon', 'revenue': 1000.0, 'expenses': 300.0},
-          {'label': 'Tue', 'revenue': 4500.0, 'expenses': 1500.0},
-          {'label': 'Wed', 'revenue': 2750.0, 'expenses': 800.0},
-          {'label': 'Thu', 'revenue': 1500.0, 'expenses': 200.0},
-          {'label': 'Fri', 'revenue': 0.0, 'expenses': 0.0},
-        ];
-
-        final newExpenses = {
-          'تشغيل': 2000.0,
-          'رواتب': 1500.0,
-          'نثريات': 1000.0,
-        };
-
-        setState(() {
-          _summaryData = newSummary;
-          _trendData = newTrend;
-          _expenseDistribution = newExpenses;
-          _isLoading = false;
-
-          _dashboardCache[cacheKey] = {
-            'summary': newSummary,
-            'trend': newTrend,
-            'expenses': newExpenses,
+        if (response['success'] == true) {
+          final summary = response['summary'] ?? {};
+          final newSummary = {
+            'revenue': (summary['revenue'] ?? 0.0).toDouble(),
+            'expenses': (summary['expenses'] ?? 0.0).toDouble(),
+            'net_profit': (summary['netProfit'] ?? 0.0).toDouble(),
+            'margin': (summary['profitMargin'] ?? 0.0).toDouble(),
           };
-        });
+
+          // The API currently doesn't provide detailed breakdown or trend for the dashboard in one call
+          // We can provide empty lists/maps for now or keep placeholder logic for trend if acceptable
+          // BUT the user asked for real values. If API doesn't have it, we show 0 or handle it.
+          final newTrend =
+              (response['trend'] as List?)
+                  ?.map(
+                    (e) => {
+                      'label': e['label'] ?? '',
+                      'revenue': (e['revenue'] ?? 0.0).toDouble(),
+                      'expenses': (e['expenses'] ?? 0.0).toDouble(),
+                    },
+                  )
+                  .toList() ??
+              [];
+
+          final newExpenses =
+              (response['expenses'] as Map?)?.map(
+                (key, value) =>
+                    MapEntry(key.toString(), (value as num).toDouble()),
+              ) ??
+              {};
+
+          setState(() {
+            _summaryData = newSummary;
+            _trendData = newTrend;
+            _expenseDistribution = newExpenses;
+            _isLoading = false;
+
+            _dashboardCache[cacheKey] = {
+              'summary': newSummary,
+              'trend': newTrend,
+              'expenses': newExpenses,
+            };
+          });
+        }
       }
     } catch (e) {
+      if (kDebugMode) print('Dashboard Error: $e');
       if (mounted) {
         setState(() {
           _isLoading = false;
+          _summaryData = {
+            'revenue': 0.0,
+            'expenses': 0.0,
+            'net_profit': 0.0,
+            'margin': 0.0,
+          };
+          _trendData = [];
+          _expenseDistribution = {};
         });
       }
     }
@@ -153,7 +172,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             floating: true,
             backgroundColor: LaapakColors.background,
             elevation: 0,
-            centerTitle: false,
+            centerTitle: true,
             title: WeekNavigator(
               startDate: _selectedStartDate,
               endDate: _selectedEndDate,
@@ -161,16 +180,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
               onPrev: _previousWeek,
               onNext: _nextWeek,
             ),
-            actions: [
-              IconButton(
-                icon: const Icon(
-                  Icons.refresh,
-                  color: LaapakColors.textSecondary,
-                ),
-                onPressed: () => _fetchData(forceRefresh: true),
-              ),
-              const SizedBox(width: 8),
-            ],
           ),
 
           // 2. Hero KPI (Net Profit)
@@ -195,7 +204,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               childAspectRatio: 1.5,
               children: [
                 KpiCard(
-                  label: 'الإيرادات',
+                  label: 'المبيعات',
                   value: _formattedCurrency(_summaryData['revenue']),
                   changePercent: 12.5,
                 ),
@@ -239,7 +248,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
-                        'الإيرادات والمصروفات',
+                        'المبيعات والمصروفات',
                         style: TextStyle(
                           color: LaapakColors.textSecondary,
                           fontSize: 14,
@@ -249,17 +258,30 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       const SizedBox(height: 16),
                       SizedBox(
                         height: 250,
-                        child: TrendChart(
-                          labels: _trendData
-                              .map((e) => e['label'] as String)
-                              .toList(),
-                          revenue: _trendData
-                              .map((e) => (e['revenue'] as num).toDouble())
-                              .toList(),
-                          expenses: _trendData
-                              .map((e) => (e['expenses'] as num).toDouble())
-                              .toList(),
-                        ),
+                        child: _trendData.isEmpty
+                            ? const Center(
+                                child: Text(
+                                  'لا يوجد بيانات لهذا الأسبوع',
+                                  style: TextStyle(
+                                    color: LaapakColors.textSecondary,
+                                  ),
+                                ),
+                              )
+                            : TrendChart(
+                                labels: _trendData
+                                    .map((e) => e['label'] as String)
+                                    .toList(),
+                                revenue: _trendData
+                                    .map(
+                                      (e) => (e['revenue'] as num).toDouble(),
+                                    )
+                                    .toList(),
+                                expenses: _trendData
+                                    .map(
+                                      (e) => (e['expenses'] as num).toDouble(),
+                                    )
+                                    .toList(),
+                              ),
                       ),
                     ],
                   ),
@@ -294,7 +316,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       const SizedBox(height: 16),
                       SizedBox(
                         height: 250,
-                        child: ExpenseChart(data: _expenseDistribution),
+                        child: _expenseDistribution.isEmpty
+                            ? const Center(
+                                child: Text(
+                                  'لا يوجد مصروفات لهذا الأسبوع',
+                                  style: TextStyle(
+                                    color: LaapakColors.textSecondary,
+                                  ),
+                                ),
+                              )
+                            : ExpenseChart(data: _expenseDistribution),
                       ),
                     ],
                   ),

@@ -5,6 +5,11 @@ class Transaction {
   final String type; // 'income' or 'expense'
   final String category;
   final String? description;
+  final String? name;
+  final String? nameAr;
+  final int? categoryId;
+  final int? moneyLocationId;
+  final String? expenseType; // 'fixed' or 'variable'
   final String status;
   // Income specific
   final List<InvoiceItem>? items;
@@ -16,6 +21,11 @@ class Transaction {
     required this.type,
     required this.category,
     this.description,
+    this.name,
+    this.nameAr,
+    this.categoryId,
+    this.moneyLocationId,
+    this.expenseType,
     required this.status,
     this.items,
   });
@@ -28,6 +38,13 @@ class Transaction {
       type: json['type'],
       category: json['category'],
       description: json['description'],
+      name: json['name'],
+      nameAr: json['name_ar'],
+      categoryId: json['category_id'],
+      moneyLocationId: json['money_location_id'],
+      expenseType:
+          json['expense_type'] ??
+          json['type'], // Fallback to type if not provided
       status: json['status'],
       items: json['items'] != null
           ? (json['items'] as List).map((i) => InvoiceItem.fromJson(i)).toList()

@@ -103,6 +103,8 @@ class FinanceApiService {
     required double amount,
     required int categoryId,
     required DateTime date,
+    required int moneyLocationId, // New required field
+    String? nameAr, // Optional Arabic name
     String type = 'variable',
     String? description,
   }) async {
@@ -111,8 +113,10 @@ class FinanceApiService {
         '$_baseUrl/expenses',
         data: {
           'name': name,
+          if (nameAr != null) 'name_ar': nameAr,
           'amount': amount,
           'category_id': categoryId,
+          'money_location_id': moneyLocationId,
           'date': date.toIso8601String().split('T')[0],
           'type': type,
           if (description != null) 'description': description,
@@ -120,6 +124,76 @@ class FinanceApiService {
       );
     } catch (e) {
       if (kDebugMode) print('Error creating expense: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> updateExpense({
+    required int id,
+    required String name,
+    required double amount,
+    required int categoryId,
+    required DateTime date,
+    required int moneyLocationId, // New required field
+    String? nameAr, // Optional Arabic name
+    String type = 'variable',
+    String? description,
+  }) async {
+    try {
+      await _dio.put(
+        '$_baseUrl/expenses/$id',
+        data: {
+          'name': name,
+          if (nameAr != null) 'name_ar': nameAr,
+          'amount': amount,
+          'category_id': categoryId,
+          'money_location_id': moneyLocationId,
+          'date': date.toIso8601String().split('T')[0],
+          'type': type,
+          if (description != null) 'description': description,
+        },
+      );
+    } catch (e) {
+      if (kDebugMode) print('Error updating expense: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> deleteExpense(int id) async {
+    try {
+      await _dio.delete('$_baseUrl/expenses/$id');
+    } catch (e) {
+      if (kDebugMode) print('Error deleting expense: $e');
+      rethrow;
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getExpenseCategories() async {
+    try {
+      final response = await _dio.get('$_baseUrl/expense-categories');
+      if (response.data['success'] == true) {
+        return List<Map<String, dynamic>>.from(
+          response.data['data']['categories'],
+        );
+      }
+      return [];
+    } catch (e) {
+      if (kDebugMode) print('Error fetching expense categories: $e');
+      rethrow;
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getMoneyLocations() async {
+    try {
+      final response = await _dio.get('$_baseUrl/locations');
+      if (response.data['success'] == true) {
+        return List<Map<String, dynamic>>.from(
+          response.data['data']['locations'],
+        );
+      }
+      return [];
+    } catch (e) {
+      if (kDebugMode) print('Error fetching money locations: $e');
       rethrow;
     }
   }

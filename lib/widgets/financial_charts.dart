@@ -26,14 +26,19 @@ class TrendChart extends StatelessWidget {
     }
 
     // Determine Y-axis max for scaling
-    final maxY = (revenue + expenses).reduce((a, b) => a > b ? a : b) * 1.2;
+    final List<double> allValues = [...revenue, ...expenses];
+    final double maxValue = allValues.isNotEmpty
+        ? allValues.reduce((a, b) => a > b ? a : b)
+        : 0.0;
+    final maxY = maxValue == 0 ? 10.0 : maxValue * 1.2;
+    final interval = maxY / 5 > 0 ? maxY / 5 : 1.0;
 
     return LineChart(
       LineChartData(
         gridData: FlGridData(
           show: true,
           drawVerticalLine: false,
-          horizontalInterval: maxY / 5,
+          horizontalInterval: interval,
           getDrawingHorizontalLine: (value) {
             return const FlLine(color: LaapakColors.border, strokeWidth: 1);
           },
@@ -73,7 +78,7 @@ class TrendChart extends StatelessWidget {
           leftTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
-              interval: maxY / 5,
+              interval: interval,
               getTitlesWidget: (value, meta) {
                 if (value == 0) return const Text('');
                 return Text(
@@ -152,6 +157,15 @@ class ExpenseChart extends StatelessWidget {
     }
 
     final total = data.values.fold(0.0, (sum, val) => sum + val);
+
+    if (total == 0) {
+      return const Center(
+        child: Text(
+          'لا يوجد مبالغ مستحقة',
+          style: TextStyle(color: LaapakColors.textSecondary),
+        ),
+      );
+    }
 
     // Convert map to list for indexing colors
     final entries = data.entries.toList();

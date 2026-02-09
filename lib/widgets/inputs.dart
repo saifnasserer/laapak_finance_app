@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../theme/colors.dart';
-import '../utils/responsive.dart';
 
 class MinimalTextField extends StatefulWidget {
   final TextEditingController? controller;
@@ -10,6 +9,8 @@ class MinimalTextField extends StatefulWidget {
   final bool obscureText;
   final TextInputType keyboardType;
 
+  final int maxLines;
+
   const MinimalTextField({
     super.key,
     this.controller,
@@ -18,6 +19,7 @@ class MinimalTextField extends StatefulWidget {
     this.validator,
     this.obscureText = false,
     this.keyboardType = TextInputType.text,
+    this.maxLines = 1,
   });
 
   @override
@@ -31,11 +33,13 @@ class _MinimalTextFieldState extends State<MinimalTextField> {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: LaapakColors.surfaceVariant,
-        borderRadius: BorderRadius.circular(Responsive.inputRadius),
+        color: LaapakColors.background,
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: _isFocused ? LaapakColors.primary : Colors.transparent,
-          width: 1.5,
+          color: _isFocused
+              ? LaapakColors.primary
+              : LaapakColors.border.withValues(alpha: 0.5),
+          width: _isFocused ? 1.5 : 1.0,
         ),
       ),
       child: Focus(
@@ -49,6 +53,7 @@ class _MinimalTextFieldState extends State<MinimalTextField> {
           obscureText: widget.obscureText,
           keyboardType: widget.keyboardType,
           validator: widget.validator,
+          maxLines: widget.maxLines,
           decoration: InputDecoration(
             hintText: widget.hintText,
             hintStyle: const TextStyle(color: LaapakColors.textSecondary),

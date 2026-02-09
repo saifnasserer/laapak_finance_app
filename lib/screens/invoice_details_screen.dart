@@ -169,61 +169,80 @@ class _InvoiceDetailsScreenState extends State<InvoiceDetailsScreen> {
                           ),
                         ],
                       ),
-                      padding: const EdgeInsets.all(16),
-                      child: Row(
+                      padding: const EdgeInsets.all(12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Container(
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              color: LaapakColors.primary.withOpacity(0.1),
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.inventory_2_outlined,
-                              color: LaapakColors.primary,
-                              size: 20,
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
+                          // 1. Name
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: LaapakColors.primary.withOpacity(0.1),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.inventory_2_outlined,
+                                  color: LaapakColors.primary,
+                                  size: 16,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
                                   item['description'] ?? 'منتج',
                                   style: const TextStyle(
                                     fontWeight: FontWeight.bold,
-                                    fontSize: 16,
+                                    fontSize: 14,
                                     color: LaapakColors.textPrimary,
                                   ),
                                 ),
-                                const SizedBox(height: 4),
-                                Row(
-                                  children: [
-                                    Text(
-                                      hasCost
-                                          ? 'التكلفة: $cost'
-                                          : 'لم يتم تحديد التكلفة',
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        color: hasCost
-                                            ? LaapakColors.textSecondary
-                                            : LaapakColors.error,
-                                        fontWeight: hasCost
-                                            ? FontWeight.normal
-                                            : FontWeight.bold,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
+                              ),
+                              // Edit Icon
+                              // const Icon(
+                              //   Icons.edit_outlined,
+                              //   color: LaapakColors.textSecondary,
+                              //   size: 16,
+                              // ),
+                            ],
                           ),
-                          // Edit icon indicates interactivity, kept for clarity
-                          const Icon(
-                            Icons.edit_outlined,
-                            color: LaapakColors.primary,
-                            size: 20,
+                          const SizedBox(height: 12),
+                          const Divider(height: 1, thickness: 0.5),
+                          const SizedBox(height: 12),
+
+                          // 2. Metrics Row (QTY, Sale, Cost, Profit)
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              // QTY
+                              _buildMetricColumn(
+                                'الكمية',
+                                '${item['quantity'] ?? 1}',
+                                LaapakColors.textPrimary,
+                              ),
+                              // Sale Price
+                              _buildMetricColumn(
+                                'سعر البيع',
+                                '${item['amount'] ?? 0}',
+                                LaapakColors.success,
+                              ),
+                              // Cost
+                              _buildMetricColumn(
+                                'التكلفة',
+                                hasCost ? '$cost' : '-',
+                                hasCost
+                                    ? LaapakColors.textPrimary
+                                    : LaapakColors.error,
+                              ),
+                              // Profit
+                              _buildMetricColumn(
+                                'الربح',
+                                _calculateItemProfit(item, hasCost, cost),
+                                LaapakColors.primary,
+                                isBold: true,
+                              ),
+                            ],
                           ),
                         ],
                       ),
@@ -232,6 +251,47 @@ class _InvoiceDetailsScreenState extends State<InvoiceDetailsScreen> {
                 },
               ),
       ),
+    );
+  }
+
+  String _calculateItemProfit(
+    Map<String, dynamic> item,
+    bool hasCost,
+    double costVal,
+  ) {
+    if (!hasCost) return '-';
+    final double qty = double.tryParse(item['quantity'].toString()) ?? 1.0;
+    final double salePrice =
+        double.tryParse((item['amount'] ?? 0).toString()) ?? 0.0;
+    final double profit = (salePrice - costVal) * qty;
+    return profit.toStringAsFixed(2);
+  }
+
+  Widget _buildMetricColumn(
+    String label,
+    String value,
+    Color color, {
+    bool isBold = false,
+  }) {
+    return Column(
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 10,
+            color: LaapakColors.textSecondary,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: isBold ? FontWeight.w900 : FontWeight.w600,
+            color: color,
+          ),
+        ),
+      ],
     );
   }
 }

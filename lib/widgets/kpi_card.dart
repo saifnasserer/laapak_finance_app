@@ -26,7 +26,7 @@ class KpiCard extends StatelessWidget {
       ),
       color: LaapakColors.surface,
       child: Padding(
-        padding: const EdgeInsets.all(24.0),
+        padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisAlignment: MainAxisAlignment.center,
@@ -39,18 +39,21 @@ class KpiCard extends StatelessWidget {
                 fontWeight: FontWeight.w500,
               ),
             ),
-            const SizedBox(height: 8),
-            Text(
-              value,
-              style: const TextStyle(
-                color: LaapakColors.textPrimary,
-                fontSize: 32,
-                fontWeight: FontWeight.w700,
-                height: 1.2,
+            const SizedBox(height: 4),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                value,
+                style: const TextStyle(
+                  color: LaapakColors.textPrimary,
+                  fontSize: 32,
+                  fontWeight: FontWeight.w700,
+                  height: 1.2,
+                ),
               ),
             ),
             if (changePercent != null) ...[
-              const SizedBox(height: 8),
+              const SizedBox(height: 4),
               _TrendIndicator(percent: changePercent!),
             ],
           ],
@@ -77,29 +80,32 @@ class _TrendIndicator extends StatelessWidget {
         ? Icons.remove
         : (isPositive ? Icons.arrow_upward : Icons.arrow_downward);
 
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 14, color: color),
-        const SizedBox(width: 4),
-        Text(
-          '${percent.abs().toStringAsFixed(1)}%',
-          style: TextStyle(
-            color: color,
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(width: 4),
-        if (!isNeutral)
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 4),
           Text(
-            'عن الأسبوع الماضي',
-            style: const TextStyle(
-              color: LaapakColors.textSecondary,
-              fontSize: 12,
+            '${percent.abs().toStringAsFixed(1)}%',
+            style: TextStyle(
+              color: color,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
             ),
           ),
-      ],
+          const SizedBox(width: 4),
+          if (!isNeutral)
+            Text(
+              'عن الأسبوع الماضي',
+              style: const TextStyle(
+                color: LaapakColors.textSecondary,
+                fontSize: 12,
+              ),
+            ),
+        ],
+      ),
     );
   }
 }

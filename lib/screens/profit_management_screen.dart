@@ -4,6 +4,7 @@ import '../theme/colors.dart';
 import '../services/finance_api_service.dart';
 import '../widgets/week_navigator.dart';
 import 'invoice_details_screen.dart';
+import 'dashboard_screen.dart';
 
 class ProfitManagementScreen extends StatefulWidget {
   const ProfitManagementScreen({super.key});
@@ -160,196 +161,231 @@ class _ProfitManagementScreenState extends State<ProfitManagementScreen> {
 
     return Scaffold(
       backgroundColor: LaapakColors.background,
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            pinned: true,
-            floating: true,
-            backgroundColor: LaapakColors.surface,
-            elevation: 2,
-            toolbarHeight: 56, // Standard height
-            // Title: Search Field OR WeekNavigator
-            title: _isSearching
-                ? TextField(
-                    autofocus: true,
-                    onChanged: (val) => setState(() => _searchQuery = val),
-                    style: const TextStyle(fontSize: 14),
-                    decoration: const InputDecoration(
-                      hintText: 'بحث...',
-                      border: InputBorder.none,
-                      enabledBorder: InputBorder.none,
-                      focusedBorder: InputBorder.none,
-                      hintStyle: TextStyle(color: LaapakColors.textSecondary),
-                    ),
-                  )
-                : WeekNavigator(
-                    startDate: _selectedStartDate,
-                    endDate: _selectedEndDate,
-                    isLoading: _isLoading,
-                    onPrev: _previousWeek,
-                    onNext: _nextWeek,
-                  ),
-            centerTitle: true,
-            // Actions: Search Icon/Close, Review Toggle, Nav Shortcut
-            actions: [
-              if (_isSearching)
-                IconButton(
-                  icon: const Icon(Icons.close),
-                  color: LaapakColors.textSecondary,
-                  onPressed: () {
-                    setState(() {
-                      _isSearching = false;
-                      _searchQuery = '';
-                    });
-                  },
-                )
-              else ...[
-                PopupMenuButton<String>(
-                  icon: const Icon(
-                    Icons.more_vert,
-                    color: LaapakColors.textPrimary,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  onSelected: (value) {
-                    switch (value) {
-                      case 'search':
-                        setState(() => _isSearching = true);
-                        break;
-                      case 'review':
-                        setState(() => _isReviewMode = !_isReviewMode);
-                        break;
-                    }
-                  },
-                  itemBuilder: (BuildContext context) => [
-                    // Search Item
-                    const PopupMenuItem(
-                      value: 'search',
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.search,
-                            size: 20,
-                            color: LaapakColors.textSecondary,
-                          ),
-                          SizedBox(width: 12),
-                          Text('بحث'),
-                        ],
+      body: RefreshIndicator(
+        onRefresh: _fetchData,
+        color: LaapakColors.primary,
+        child: CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          slivers: [
+            SliverAppBar(
+              pinned: true,
+              floating: true,
+              backgroundColor: LaapakColors.surface,
+              elevation: 2,
+              toolbarHeight: 56, // Standard height
+              // Title: Search Field OR WeekNavigator
+              title: _isSearching
+                  ? TextField(
+                      autofocus: true,
+                      onChanged: (val) => setState(() => _searchQuery = val),
+                      style: const TextStyle(fontSize: 14),
+                      decoration: const InputDecoration(
+                        hintText: 'بحث...',
+                        border: InputBorder.none,
+                        enabledBorder: InputBorder.none,
+                        focusedBorder: InputBorder.none,
+                        hintStyle: TextStyle(color: LaapakColors.textSecondary),
+                      ),
+                    )
+                  : FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: WeekNavigator(
+                        startDate: _selectedStartDate,
+                        endDate: _selectedEndDate,
+                        isLoading: _isLoading,
+                        onPrev: _previousWeek,
+                        onNext: _nextWeek,
                       ),
                     ),
-                    // Review Mode Item
-                    PopupMenuItem(
-                      value: 'review',
-                      child: Row(
-                        children: [
-                          Icon(
-                            _isReviewMode
-                                ? Icons.check_circle
-                                : Icons.rate_review_outlined,
-                            size: 20,
-                            color: _isReviewMode
-                                ? LaapakColors.success
-                                : LaapakColors.textSecondary,
+              centerTitle: true,
+              // Actions: Search Icon/Close, Review Toggle, Nav Shortcut
+              actions: [
+                if (_isSearching)
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    color: LaapakColors.textSecondary,
+                    onPressed: () {
+                      setState(() {
+                        _isSearching = false;
+                        _searchQuery = '';
+                      });
+                    },
+                  )
+                else ...[
+                  // Analysis Button (Circular)
+                  Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 4),
+                    decoration: BoxDecoration(
+                      color: LaapakColors.background,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: LaapakColors.border, width: 1),
+                    ),
+                    child: IconButton(
+                      icon: const Icon(
+                        Icons.analytics_outlined,
+                        size: 20,
+                        color: LaapakColors.textPrimary,
+                      ),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const DashboardScreen(),
                           ),
-                          const SizedBox(width: 12),
-                          Text(
-                            _isReviewMode ? 'عرض الكل' : 'وضع المراجعة',
-                            style: TextStyle(
+                        );
+                      },
+                      tooltip: 'التحليل المالي',
+                    ),
+                  ),
+                  PopupMenuButton<String>(
+                    icon: const Icon(
+                      Icons.more_vert,
+                      color: LaapakColors.textPrimary,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    onSelected: (value) {
+                      switch (value) {
+                        case 'search':
+                          setState(() => _isSearching = true);
+                          break;
+                        case 'review':
+                          setState(() => _isReviewMode = !_isReviewMode);
+                          break;
+                      }
+                    },
+                    itemBuilder: (BuildContext context) => [
+                      // Search Item
+                      const PopupMenuItem(
+                        value: 'search',
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.search,
+                              size: 20,
+                              color: LaapakColors.textSecondary,
+                            ),
+                            SizedBox(width: 12),
+                            Text('بحث'),
+                          ],
+                        ),
+                      ),
+                      // Review Mode Item
+                      PopupMenuItem(
+                        value: 'review',
+                        child: Row(
+                          children: [
+                            Icon(
+                              _isReviewMode
+                                  ? Icons.check_circle
+                                  : Icons.rate_review_outlined,
+                              size: 20,
                               color: _isReviewMode
                                   ? LaapakColors.success
-                                  : null,
-                              fontWeight: _isReviewMode
-                                  ? FontWeight.bold
-                                  : FontWeight.normal,
+                                  : LaapakColors.textSecondary,
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              _isReviewMode ? 'عرض الكل' : 'وضع المراجعة',
+                              style: TextStyle(
+                                color: _isReviewMode
+                                    ? LaapakColors.success
+                                    : null,
+                                fontWeight: _isReviewMode
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(width: 8),
+                ],
+              ],
+            ),
+
+            // List
+            _isLoading
+                ? const SliverFillRemaining(
+                    child: Center(child: CircularProgressIndicator()),
+                  )
+                : _hasError
+                ? SliverFillRemaining(
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(
+                            Icons.error_outline,
+                            size: 64,
+                            color: LaapakColors.error,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'عذراً، حدث خطأ أثناء تحميل البيانات',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: LaapakColors.textPrimary,
+                            ),
+                          ),
+                          if (_errorMessage.isNotEmpty) ...[
+                            const SizedBox(height: 8),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 32,
+                              ),
+                              child: Text(
+                                _errorMessage,
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  color: LaapakColors.textSecondary,
+                                ),
+                                maxLines: 3,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                          const SizedBox(height: 24),
+                          ElevatedButton.icon(
+                            onPressed: () => _fetchData(forceRefresh: true),
+                            icon: const Icon(Icons.refresh),
+                            label: const Text('إعادة المحاولة'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: LaapakColors.primary,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 24,
+                                vertical: 12,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
                             ),
                           ),
                         ],
                       ),
                     ),
-                  ],
-                ),
-                const SizedBox(width: 8),
-              ],
-            ],
-          ),
-
-          // List
-          _isLoading
-              ? const SliverFillRemaining(
-                  child: Center(child: CircularProgressIndicator()),
-                )
-              : _hasError
-              ? SliverFillRemaining(
-                  child: Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(
-                          Icons.error_outline,
-                          size: 64,
-                          color: LaapakColors.error,
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'عذراً، حدث خطأ أثناء تحميل البيانات',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: LaapakColors.textPrimary,
-                          ),
-                        ),
-                        if (_errorMessage.isNotEmpty) ...[
-                          const SizedBox(height: 8),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 32),
-                            child: Text(
-                              _errorMessage,
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(
-                                fontSize: 13,
-                                color: LaapakColors.textSecondary,
-                              ),
-                              maxLines: 3,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                        const SizedBox(height: 24),
-                        ElevatedButton.icon(
-                          onPressed: () => _fetchData(forceRefresh: true),
-                          icon: const Icon(Icons.refresh),
-                          label: const Text('إعادة المحاولة'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: LaapakColors.primary,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 24,
-                              vertical: 12,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+                  )
+                : filteredInvoices.isEmpty
+                ? const SliverFillRemaining(
+                    child: Center(child: Text('لا يوجد بيانات')),
+                  )
+                : SliverList(
+                    delegate: SliverChildBuilderDelegate((context, index) {
+                      final inv = filteredInvoices[index];
+                      return _buildInvoiceCard(inv);
+                    }, childCount: filteredInvoices.length),
                   ),
-                )
-              : filteredInvoices.isEmpty
-              ? const SliverFillRemaining(
-                  child: Center(child: Text('لا يوجد بيانات')),
-                )
-              : SliverList(
-                  delegate: SliverChildBuilderDelegate((context, index) {
-                    final inv = filteredInvoices[index];
-                    return _buildInvoiceCard(inv);
-                  }, childCount: filteredInvoices.length),
-                ),
 
-          // Bottom Padding
-          const SliverPadding(padding: EdgeInsets.only(bottom: 80)),
-        ],
+            // Bottom Padding
+            const SliverPadding(padding: EdgeInsets.only(bottom: 80)),
+          ],
+        ),
       ),
     );
   }
